@@ -15,25 +15,25 @@ This project implements multiple recommendation models for the H&M Fashion datas
 ```
 fashion_recommendations/
 ├── databricks.yml                   # Bundle configuration
-├── requirements.txt                 # Python dependencies
+├── pyproject.toml                   # Poetry dependencies
+├── requirements.txt                 # Python dependencies (generated from Poetry)
+├── Makefile                         # Development commands
 │
 ├── training/                        # Model training
-│   ├── notebooks/                   # Training notebooks
-│   │   ├── train_popularity.py
-│   │   └── train_age_rules.py
-│   └── steps/                       # Reusable modules
+│   └── notebooks/                   # Training notebooks
+│       ├── train_popularity.py
+│       ├── train_age_rules.py
+│       ├── train_lstm.py
+│       └── train_ensemble.py
 │
-├── feature_engineering/             # Feature Store
+├── data_engineering/                # Data pipeline & Feature Store
 │   ├── notebooks/
-│   │   └── create_features.py
+│   │   ├── 01_load_data.py
+│   │   ├── 02_create_features.py
+│   │   └── 03_create_splits.py
 │   ├── features/                    # Feature transforms
+│   ├── data_utils.py
 │   └── feature_utils.py
-│
-├── data_preparation/                # Data pipeline
-│   ├── notebooks/
-│   │   ├── load_data.py
-│   │   └── create_splits.py
-│   └── data_utils.py
 │
 ├── deployment/                      # Model deployment
 │   ├── batch_inference/
@@ -44,18 +44,22 @@ fashion_recommendations/
 │
 ├── resources/                       # Infrastructure as Code
 │   ├── ml-artifacts-resource.yml
-│   ├── data-pipeline-workflow.yml
-│   ├── feature-engineering-workflow.yml
+│   ├── data-engineering-workflow.yml
 │   ├── model-training-workflow.yml
 │   └── batch-inference-workflow.yml
 │
 ├── utils/                           # Shared utilities
 │   └── evaluation_utils.py         # MAP@12 metrics
 │
-└── config/                          # Configuration
-    ├── catalog_config.py
-    ├── model_config.py
-    └── paths.py
+├── config/                          # Configuration
+│   ├── catalog_config.py
+│   ├── model_config.py
+│   └── paths.py
+│
+└── environments/                    # Databricks environment configs
+    ├── base-core.yml
+    ├── base-viz.yml
+    └── base-dl.yml
 ```
 
 ## Environment Strategy
@@ -91,6 +95,11 @@ fashion_recommendations/
 1. Clone the repository
 2. Install dependencies:
    ```bash
+   # Using Poetry (recommended for development)
+   make install              # Core dependencies only
+   make install-all          # All dependencies (viz, dl, dev)
+
+   # Or using pip
    pip install -r requirements.txt
    ```
 
@@ -98,48 +107,32 @@ fashion_recommendations/
 
 **Validate bundle:**
 ```bash
-databricks bundle validate -t dev
+make validate
+# Or: databricks bundle validate -t dev
 ```
 
-**Deploy to dev:**
+**Deploy to environments:**
 ```bash
-databricks bundle deploy -t dev
-```
-
-**Deploy to staging:**
-```bash
-databricks bundle deploy -t staging
-```
-
-**Deploy to prod:**
-```bash
-databricks bundle deploy -t prod
+make deploy              # Deploy to dev (default)
+make deploy-staging      # Deploy to staging
+make deploy-prod         # Deploy to production
 ```
 
 ## Running the Pipeline
 
-### 1. Data Pipeline
+### 1. Data Engineering
 
-Load data and create train/val/test splits:
+Load data, create features, and create train/val/test splits:
 ```bash
-databricks bundle run data_pipeline_job -t dev
+databricks bundle run data_engineering_job -t dev
 ```
 
-Or run manually in the workspace:
-1. `data_preparation/notebooks/load_data.py`
-2. `data_preparation/notebooks/create_splits.py`
+Or run notebooks manually in the workspace:
+1. `data_engineering/notebooks/01_load_data.py`
+2. `data_engineering/notebooks/02_create_features.py`
+3. `data_engineering/notebooks/03_create_splits.py`
 
-### 2. Feature Engineering
-
-Create and register features:
-```bash
-databricks bundle run feature_engineering_job -t dev
-```
-
-Or run manually:
-- `feature_engineering/notebooks/create_features.py`
-
-### 3. Model Training
+### 2. Model Training
 
 Train all models:
 ```bash
@@ -149,8 +142,10 @@ databricks bundle run model_training_job -t dev
 Or run individual models:
 - `training/notebooks/train_popularity.py`
 - `training/notebooks/train_age_rules.py`
+- `training/notebooks/train_lstm.py` (coming soon)
+- `training/notebooks/train_ensemble.py` (coming soon)
 
-### 4. Batch Inference
+### 3. Batch Inference
 
 Generate recommendations:
 ```bash
@@ -180,10 +175,15 @@ All notebooks accept these parameters (provided automatically by bundle):
 ## Development Workflow
 
 1. **Local Development**: Work in notebooks, test with `dev` target
-2. **Validate**: `databricks bundle validate -t staging`
-3. **Deploy to Staging**: `databricks bundle deploy -t staging`
-4. **Test in Staging**: Run jobs and verify results
-5. **Deploy to Production**: `databricks bundle deploy -t prod`
+2. **Update Dependencies** (if needed):
+   ```bash
+   poetry add new-package
+   make update-requirements     # Export to requirements.txt
+   ```
+3. **Validate**: `make validate`
+4. **Deploy to Staging**: `make deploy-staging`
+5. **Test in Staging**: Run jobs and verify results
+6. **Deploy to Production**: `make deploy-prod`
 
 ## Configuration
 
@@ -197,6 +197,22 @@ POPULARITY_CONFIG = {
     "top_n": 12
 }
 ```
+
+### Managing Dependencies
+
+This project uses Poetry for dependency management:
+```bash
+# Add a new dependency
+poetry add package-name
+
+# Update requirements.txt for Databricks
+make update-requirements
+
+# Update Databricks environment YAML files
+make update-environments
+```
+
+See [docs/poetry-databricks-guide.md](docs/poetry-databricks-guide.md) for detailed guide.
 
 ### Updating Job Schedules
 
@@ -217,28 +233,33 @@ schedule:
 
 **Bundle validation fails:**
 ```bash
-databricks bundle validate -t dev
+make validate
 # Check error messages for YAML syntax issues
 ```
 
 **Notebook fails to find tables:**
-- Ensure data pipeline job completed successfully
-- Check catalog/schema names are correct
+- Ensure data engineering job completed successfully
+- Check catalog/schema names are correct for your environment
 - Verify Unity Catalog permissions
 
 **Import errors:**
-- Ensure `requirements.txt` is installed
-- Check Python path configuration in notebooks
+- Ensure dependencies are up to date:
+  ```bash
+  make update-requirements
+  make deploy
+  ```
+- Check that notebooks use correct parameters from bundle
 
 ## Project Status
 
 ✅ **Completed:**
-- Data preparation pipeline
+- Data engineering pipeline (load, features, splits)
 - Feature Store integration
 - Popularity model
 - Age rules model
-- Bundle configuration
-- Resource definitions
+- Bundle configuration with multi-environment support
+- Resource definitions (workflows)
+- Poetry dependency management
 
 🚧 **In Progress:**
 - LSTM model
