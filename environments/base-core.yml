@@ -1,0 +1,18 @@
+# Base Environment for Databricks Serverless Notebooks
+# Core dependencies for data engineering and ML workflows
+# Managed via Poetry - regenerate with: poetry export -f requirements.txt --without-hashes -o requirements.txt
+
+name: fashion-recs-core
+channels:
+  - defaults
+
+dependencies:
+  - python>=3.11,<3.13
+  - pip
+  - pip:
+      # Core ML/Data Science dependencies
+      - mlflow>=3.0.0
+      - databricks-feature-engineering>=0.2.0
+      - pandas>=1.5.0
+      - numpy>=1.24.0
+      - scikit-learn>=1.3.0

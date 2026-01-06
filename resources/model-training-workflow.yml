@@ -1,0 +1,77 @@
+# Model Training Workflow: Train all recommendation models
+resources:
+  jobs:
+    model_training_job:
+      name: ${bundle.target}-fashion-recs-model-training
+
+      environments:
+        - environment_key: lstm_env
+          spec:
+            dependencies:
+              - mlflow>=3.0.0
+              - databricks-feature-engineering>=0.2.0
+              - pandas>=1.5.0
+              - numpy>=1.24.0
+              - scikit-learn>=1.3.0
+              - matplotlib>=3.7.0
+              - torch>=2.0.0
+              - torchvision>=0.15.0
+              - tqdm>=4.65.0
+            client: "1"
+
+      tasks:
+        # Train Popularity Baseline Model - uses serverless compute by default
+        - task_key: train_popularity
+          notebook_task:
+            notebook_path: ../training/notebooks/train_popularity.py
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              experiment_name: ${var.experiment_models}
+              model_name: ${var.model_popularity}
+
+        # Train Age-Based Rules Model - uses serverless compute by default
+        - task_key: train_age_rules
+          notebook_task:
+            notebook_path: ../training/notebooks/train_age_rules.py
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              experiment_name: ${var.experiment_models}
+              model_name: ${var.model_age_rules}
+
+        # Train LSTM Model
+        - task_key: train_lstm
+          notebook_task:
+            notebook_path: ../training/notebooks/train_lstm.py
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              experiment_name: ${var.experiment_models}
+              model_name: ${var.model_lstm}
+          environment_key: lstm_env
+
+        # Train Ensemble Model (depends on all base models)
+        - task_key: train_ensemble
+          depends_on:
+            - task_key: train_popularity
+            - task_key: train_age_rules
+            - task_key: train_lstm
+          notebook_task:
+            notebook_path: ../training/notebooks/train_ensemble.py
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              experiment_name: ${var.experiment_models}
+              model_name: ${var.model_ensemble}
+
+      # Manual trigger for now
+      # schedule:
+      #   quartz_cron_expression: "0 0 9 * * ?"  # Daily at 9am
+      #   timezone_id: UTC
+
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+        - level: CAN_MANAGE_RUN
+          group_name: users

@@ -1,0 +1,27 @@
+# Batch Inference Workflow: Generate recommendations for all customers
+resources:
+  jobs:
+    batch_inference_job:
+      name: ${bundle.target}-fashion-recs-batch-inference
+
+      tasks:
+        - task_key: batch_inference
+          notebook_task:
+            notebook_path: ../deployment/batch_inference/notebooks/batch_inference.py
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              model_name: ${var.model_ensemble}  # Use ensemble by default
+              input_table: ${var.catalog_name}.${var.schema_name}.customers_bronze
+              output_table: ${var.catalog_name}.${var.schema_name}.customer_recommendations_gold
+
+      # Manual trigger for now
+      # schedule:
+      #   quartz_cron_expression: "0 0 11 * * ?"  # Daily at 11am
+      #   timezone_id: UTC
+
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+        - level: CAN_MANAGE_RUN
+          group_name: users

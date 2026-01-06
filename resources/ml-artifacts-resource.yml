@@ -1,0 +1,65 @@
+# ML Artifacts: Experiments and Models
+resources:
+  # Unity Catalog Schema
+  schemas:
+    fashion_recommendations_schema:
+      name: ${var.schema_name}
+      catalog_name: ${var.catalog_name}
+      comment: "Schema for fashion recommendations MLOps project - contains models and tables"
+      grants:
+        - privileges: [USE_SCHEMA]
+          principal: account users
+
+  # MLflow Experiments
+  experiments:
+    data_pipeline_experiment:
+      name: ${var.experiment_data}
+      permissions:
+        - level: CAN_READ
+          group_name: users
+
+    models_experiment:
+      name: ${var.experiment_models}
+      permissions:
+        - level: CAN_READ
+          group_name: users
+
+  # Unity Catalog Models
+  # NOTE: Models will be created automatically when notebooks register them with MLflow
+  # This section is commented out to avoid dependency issues with schema creation
+  # registered_models:
+  #   popularity_model:
+  #     name: ${var.model_popularity}
+  #     catalog_name: ${var.catalog_name}
+  #     schema_name: ${var.schema_name}
+  #     comment: "Time-based popularity recommendation model using recency-weighted frequency"
+  #     grants:
+  #       - privileges: [EXECUTE]
+  #         principal: account users
+
+  #   age_rules_model:
+  #     name: ${var.model_age_rules}
+  #     catalog_name: ${var.catalog_name}
+  #     schema_name: ${var.schema_name}
+  #     comment: "Age-based customer segmentation recommendation model"
+  #     grants:
+  #       - privileges: [EXECUTE]
+  #         principal: account users
+
+  #   lstm_model:
+  #     name: ${var.model_lstm}
+  #     catalog_name: ${var.catalog_name}
+  #     schema_name: ${var.schema_name}
+  #     comment: "LSTM sequential purchase prediction model"
+  #     grants:
+  #       - privileges: [EXECUTE]
+  #         principal: account users
+
+  #   ensemble_model:
+  #     name: ${var.model_ensemble}
+  #     catalog_name: ${var.catalog_name}
+  #     schema_name: ${var.schema_name}
+  #     comment: "Ensemble model blending all base models"
+  #     grants:
+  #       - privileges: [EXECUTE]
+  #         principal: account users

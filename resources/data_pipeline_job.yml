@@ -1,0 +1,86 @@
+# Data Pipeline Job
+# Handles data ingestion, preparation, and feature engineering
+
+resources:
+  jobs:
+    data_pipeline:
+      name: "[${bundle.target}] Fashion Recommendations - Data Pipeline"
+
+      job_clusters:
+        - job_cluster_key: data_cluster
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: ${var.max_workers}
+            spark_conf:
+              "spark.databricks.delta.preview.enabled": "true"
+              "spark.sql.adaptive.enabled": "true"
+            custom_tags:
+              project: fashion_recommendations
+              pipeline: data
+              environment: ${bundle.target}
+
+      tasks:
+        # Task 1: Data Preparation
+        - task_key: data_preparation
+          job_cluster_key: data_cluster
+          notebook_task:
+            notebook_path: ../notebooks/01_data_prep_delta
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              volume_path: ${var.volume_path}
+          libraries:
+            - pypi:
+                package: mlflow>=2.9.0
+
+        # Task 2: Feature Engineering (depends on data prep)
+        - task_key: feature_engineering
+          depends_on:
+            - task_key: data_preparation
+          job_cluster_key: data_cluster
+          notebook_task:
+            notebook_path: ../notebooks/02_feature_engineering
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+          libraries:
+            - pypi:
+                package: mlflow>=2.9.0
+            - pypi:
+                package: databricks-feature-engineering
+
+        # Task 3: Train/Test Split (depends on feature engineering)
+        - task_key: train_test_split
+          depends_on:
+            - task_key: feature_engineering
+          job_cluster_key: data_cluster
+          notebook_task:
+            notebook_path: ../notebooks/03_train_test_split
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+          libraries:
+            - pypi:
+                package: mlflow>=2.9.0
+
+      # Schedule: Run daily at 2 AM UTC
+      schedule:
+        quartz_cron_expression: "0 0 2 * * ?"
+        timezone_id: "UTC"
+        pause_status: UNPAUSED
+
+      # Email notifications
+      email_notifications:
+        on_failure:
+          - ${workspace.current_user.userName}
+
+      # Max concurrent runs
+      max_concurrent_runs: 1
+
+      # Timeout
+      timeout_seconds: 7200  # 2 hours
+
+      tags:
+        pipeline: data
+        environment: ${bundle.target}

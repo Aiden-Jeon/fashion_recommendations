@@ -1,0 +1,101 @@
+# Databricks Asset Bundle Configuration for Fashion Recommendations MLOps Project
+bundle:
+  name: fashion_recommendations
+
+# Sync configuration - deploy these files to workspace
+sync:
+  include:
+    - "environments/*.yml"
+    - "templates/**"
+    - "*.py"
+    - "*.yml"
+    - "training/**"
+    - "data_engineering/**"
+    - "deployment/**"
+    - "utils/**"
+    - "config/**"
+    - "requirements*.txt"
+
+variables:
+  # Experiments (environment-specific)
+  experiment_data:
+    description: Experiment for data pipeline runs
+    default: /Users/${workspace.current_user.userName}/experiments/${bundle.target}-fashion-recs-data
+
+  experiment_models:
+    description: Experiment for model training runs
+    default: /Users/${workspace.current_user.userName}/experiments/${bundle.target}-fashion-recs-models
+
+  # Unity Catalog (single catalog, schema per environment)
+  catalog_name:
+    description: Unity Catalog name
+    default: jongseob_demo
+
+  schema_name:
+    description: Schema name (environment-specific)
+    default: dev_fashion_recommendations
+
+  # Volume path
+  volume_path:
+    description: Path to data volume
+    default: /Volumes/jongseob_demo/fashion_recommendations/data
+
+  # Models (simple names - will be registered in catalog.schema)
+  model_popularity:
+    description: Popularity baseline model
+    default: popularity_model
+
+  model_age_rules:
+    description: Age-based rules model
+    default: age_rules_model
+
+  model_lstm:
+    description: LSTM sequential model
+    default: lstm_model
+
+  model_ensemble:
+    description: Ensemble blend model
+    default: ensemble_model
+
+# Include resource definitions
+include:
+  - ./resources/ml-artifacts-resource.yml
+  - ./resources/data-engineering-workflow.yml
+  - ./resources/model-training-workflow.yml
+  - ./resources/batch-inference-workflow.yml
+
+# Environment targets
+targets:
+  # Development environment (shared by all dev users)
+  dev:
+    mode: production
+    default: true
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+
+  # Staging environment
+  staging:
+    mode: production
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      schema_name: staging_fashion_recommendations
+    # This creates:
+    # - Schema: jongseob_demo.staging_fashion_recommendations
+    # - Models in catalog: jongseob_demo.staging_fashion_recommendations.{popularity_model, age_rules_model, etc.}
+    # - Experiments: /Users/{user}/experiments/staging-fashion-recs-{data|models}
+
+  # Production environment
+  prod:
+    mode: production
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      schema_name: prod_fashion_recommendations
+    # This creates:
+    # - Schema: jongseob_demo.prod_fashion_recommendations
+    # - Models in catalog: jongseob_demo.prod_fashion_recommendations.{popularity_model, age_rules_model, etc.}
+    # - Experiments: /Users/{user}/experiments/prod-fashion-recs-{data|models}

@@ -1,0 +1,138 @@
+# Model Training Job
+# Trains all recommendation models in parallel
+
+resources:
+  jobs:
+    model_training:
+      name: "[${bundle.target}] Fashion Recommendations - Model Training"
+
+      job_clusters:
+        # CPU cluster for simple models
+        - job_cluster_key: cpu_cluster
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: ${var.max_workers}
+            custom_tags:
+              project: fashion_recommendations
+              pipeline: training
+              environment: ${bundle.target}
+
+        # GPU cluster for deep learning
+        - job_cluster_key: gpu_cluster
+          new_cluster:
+            spark_version: 14.3.x-gpu-ml-scala2.12
+            node_type_id: g4dn.xlarge
+            num_workers: 2
+            custom_tags:
+              project: fashion_recommendations
+              pipeline: training
+              model: deep_learning
+              environment: ${bundle.target}
+
+      tasks:
+        # Task 1: Train Popularity Model
+        - task_key: train_popularity_model
+          job_cluster_key: cpu_cluster
+          notebook_task:
+            notebook_path: ../notebooks/04_model_popularity
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              model_name: popularity_baseline
+          libraries:
+            - pypi:
+                package: mlflow>=2.9.0
+
+        # Task 2: Train Age Rules Model (parallel with popularity)
+        - task_key: train_age_rules_model
+          job_cluster_key: cpu_cluster
+          notebook_task:
+            notebook_path: ../notebooks/05_model_age_rules
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              model_name: age_rules
+          libraries:
+            - pypi:
+                package: mlflow>=2.9.0
+            - pypi:
+                package: databricks-feature-engineering
+
+        # Task 3: Train LSTM Model (parallel, uses GPU)
+        - task_key: train_lstm_model
+          job_cluster_key: gpu_cluster
+          notebook_task:
+            notebook_path: ../notebooks/06_model_lstm
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              model_name: lstm_sequential
+          libraries:
+            - pypi:
+                package: mlflow>=2.9.0
+            - pypi:
+                package: tensorflow>=2.13.0
+
+        # Task 4: Model Comparison (depends on all models)
+        - task_key: model_comparison
+          depends_on:
+            - task_key: train_popularity_model
+            - task_key: train_age_rules_model
+            - task_key: train_lstm_model
+          job_cluster_key: cpu_cluster
+          notebook_task:
+            notebook_path: ../notebooks/08_model_comparison
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+          libraries:
+            - pypi:
+                package: mlflow>=2.9.0
+
+        # Task 5: Ensemble Model (depends on comparison)
+        - task_key: train_ensemble_model
+          depends_on:
+            - task_key: model_comparison
+          job_cluster_key: cpu_cluster
+          notebook_task:
+            notebook_path: ../notebooks/07_model_ensemble
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              model_name: ensemble_blend
+          libraries:
+            - pypi:
+                package: mlflow>=2.9.0
+
+        # Task 6: Register Best Model (depends on ensemble)
+        - task_key: register_best_model
+          depends_on:
+            - task_key: train_ensemble_model
+          job_cluster_key: cpu_cluster
+          python_wheel_task:
+            package_name: fashion_recommendations
+            entry_point: register_model
+            parameters:
+              - "--catalog-name=${var.catalog_name}"
+              - "--schema-name=${var.schema_name}"
+
+      # Trigger: Run after data pipeline completes
+      # Or manual trigger
+
+      # Email notifications
+      email_notifications:
+        on_success:
+          - ${workspace.current_user.userName}
+        on_failure:
+          - ${workspace.current_user.userName}
+
+      # Max concurrent runs
+      max_concurrent_runs: 1
+
+      # Timeout: 4 hours for training
+      timeout_seconds: 14400
+
+      tags:
+        pipeline: training
+        environment: ${bundle.target}
