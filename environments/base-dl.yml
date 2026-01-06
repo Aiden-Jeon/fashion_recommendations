@@ -1,27 +1,22 @@
 # Base Environment with Deep Learning Dependencies
 # For notebooks that need PyTorch/deep learning capabilities
 # Managed via Poetry - regenerate with: poetry export --with dl -f requirements.txt --without-hashes
+#
+# Note: Databricks serverless requires dependencies as a flat list of pip packages (no Conda format)
 
-name: fashion-recs-dl
-channels:
-  - defaults
+environment_version: '4'
 
 dependencies:
-  - python>=3.11,<3.13
-  - pip
-  - pip:
-      # Core dependencies
-      - mlflow>=3.0.0
-      - databricks-feature-engineering>=0.2.0
-      - pandas>=1.5.0
-      - numpy>=1.24.0
-      - scikit-learn>=1.3.0
-
-      # Deep Learning dependencies
-      - torch>=2.0.0
-      - torchvision>=0.15.0
-      - tqdm>=4.65.0
-
-      # Visualization (useful for DL analysis)
-      - matplotlib>=3.7.0
-      - seaborn>=0.12.0
+  # Core dependencies
+  - mlflow>=3.0.0
+  - databricks-feature-engineering>=0.2.0
+  - pandas>=1.5.0
+  - numpy>=1.24.0
+  - scikit-learn>=1.3.0
+  # Deep Learning dependencies
+  - torch>=2.0.0
+  - torchvision>=0.15.0
+  - tqdm>=4.65.0
+  # Visualization (useful for DL analysis)
+  - matplotlib>=3.7.0
+  - seaborn>=0.12.0

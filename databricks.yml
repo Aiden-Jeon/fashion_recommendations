@@ -17,14 +17,15 @@ sync:
     - "requirements*.txt"
 
 variables:
-  # Experiments (environment-specific)
+  # Experiments (environment-specific by deploy target: dev/staging/prod)
+  # Dev uses per-user folder, staging/prod use shared folder
   experiment_data:
     description: Experiment for data pipeline runs
-    default: /Users/${workspace.current_user.userName}/experiments/${bundle.target}-fashion-recs-data
+    default: /Users/${workspace.current_user.userName}/experiments/fashion-recs-dev_data
 
   experiment_models:
     description: Experiment for model training runs
-    default: /Users/${workspace.current_user.userName}/experiments/${bundle.target}-fashion-recs-models
+    default: /Users/${workspace.current_user.userName}/experiments/fashion-recs-dev_models
 
   # Unity Catalog (single catalog, schema per environment)
   catalog_name:
@@ -59,20 +60,25 @@ variables:
 
 # Include resource definitions
 include:
-  - ./resources/ml-artifacts-resource.yml
   - ./resources/data-engineering-workflow.yml
   - ./resources/model-training-workflow.yml
   - ./resources/batch-inference-workflow.yml
+  - ./resources/schema.yml
 
 # Environment targets
 targets:
-  # Development environment (shared by all dev users)
+  # Development environment (per-user experiments)
   dev:
     mode: production
     default: true
     workspace:
       host: https://e2-demo-field-eng.cloud.databricks.com
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      schema_name: dev_fashion_recommendations
+      # Per-user experiments for dev (bundle resolves ${workspace.current_user.userName} correctly)
+      experiment_data: /Users/${workspace.current_user.userName}/experiments/fashion-recs-dev_data
+      experiment_models: /Users/${workspace.current_user.userName}/experiments/fashion-recs-dev_models
 
   # Staging environment
   staging:
@@ -82,10 +88,8 @@ targets:
       root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
     variables:
       schema_name: staging_fashion_recommendations
-    # This creates:
-    # - Schema: jongseob_demo.staging_fashion_recommendations
-    # - Models in catalog: jongseob_demo.staging_fashion_recommendations.{popularity_model, age_rules_model, etc.}
-    # - Experiments: /Users/{user}/experiments/staging-fashion-recs-{data|models}
+      experiment_data: /Shared/experiments/fashion-recs-staging_data
+      experiment_models: /Shared/experiments/fashion-recs-staging_models
 
   # Production environment
   prod:
@@ -95,7 +99,5 @@ targets:
       root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
     variables:
       schema_name: prod_fashion_recommendations
-    # This creates:
-    # - Schema: jongseob_demo.prod_fashion_recommendations
-    # - Models in catalog: jongseob_demo.prod_fashion_recommendations.{popularity_model, age_rules_model, etc.}
-    # - Experiments: /Users/{user}/experiments/prod-fashion-recs-{data|models}
+      experiment_data: /Shared/experiments/fashion-recs-prod_data
+      experiment_models: /Shared/experiments/fashion-recs-prod_models

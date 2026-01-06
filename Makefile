@@ -1,4 +1,6 @@
-.PHONY: help update-requirements update-environments deploy-environments clean
+.PHONY: help update-requirements update-environments deploy-environments clean \
+        update-notebooks-dev update-notebooks-staging update-notebooks-prod \
+        deploy-dev deploy-staging deploy-prod test
 
 # Default target
 help:
@@ -9,16 +11,23 @@ help:
 	@echo "  make update-environments    - Update Databricks environment YAML files from Poetry"
 	@echo "  make deploy-environments    - Deploy environment files to Databricks workspace"
 	@echo ""
+	@echo "Notebook Environment Setup:"
+	@echo "  make update-notebooks-dev   - Update notebook metadata for dev deployment"
+	@echo "  make update-notebooks-staging - Update notebook metadata for staging deployment"
+	@echo "  make update-notebooks-prod  - Update notebook metadata for prod deployment"
+	@echo ""
 	@echo "Bundle Commands:"
-	@echo "  make validate              - Validate Databricks bundle configuration"
-	@echo "  make deploy                - Deploy bundle to dev environment"
-	@echo "  make deploy-staging        - Deploy bundle to staging environment"
-	@echo "  make deploy-prod           - Deploy bundle to production environment"
+	@echo "  make validate               - Validate Databricks bundle configuration"
+	@echo "  make deploy-dev             - Update notebooks + deploy to dev (recommended)"
+	@echo "  make deploy-staging         - Update notebooks + deploy to staging (recommended)"
+	@echo "  make deploy-prod            - Update notebooks + deploy to prod (recommended)"
+	@echo "  make deploy                 - Alias for deploy-dev"
 	@echo ""
 	@echo "Development:"
-	@echo "  make install               - Install dependencies with Poetry"
-	@echo "  make install-all           - Install all dependencies (including viz, dl, dev)"
-	@echo "  make clean                 - Clean temporary files"
+	@echo "  make install                - Install dependencies with Poetry"
+	@echo "  make install-all            - Install all dependencies (including viz, dl, dev)"
+	@echo "  make test                   - Run tests with pytest"
+	@echo "  make clean                  - Clean temporary files"
 
 # Install dependencies
 install:
@@ -64,28 +73,50 @@ update-environments: update-requirements
 validate:
 	databricks bundle validate
 
+# Update notebook environment metadata for each target
+update-notebooks-dev:
+	@echo "Updating notebook metadata for dev environment..."
+	python3 scripts/update_notebook_environments.py --target dev
+	@echo "✓ Notebooks updated for dev"
+
+update-notebooks-staging:
+	@echo "Updating notebook metadata for staging environment..."
+	python3 scripts/update_notebook_environments.py --target staging
+	@echo "✓ Notebooks updated for staging"
+
+update-notebooks-prod:
+	@echo "Updating notebook metadata for prod environment..."
+	python3 scripts/update_notebook_environments.py --target prod
+	@echo "✓ Notebooks updated for prod"
+
 # Deploy environments only (faster than full deploy)
 deploy-environments:
 	@echo "Deploying environment files to Databricks..."
 	databricks bundle deploy
 	@echo "✓ Environment files deployed"
-	@echo ""
-	@echo "Next steps:"
-	@echo "1. Open your notebook in Databricks"
-	@echo "2. Click the Environment panel"
-	@echo "3. Select Custom base environment"
-	@echo "4. Enter path: /Workspace/Users/$$USER/.bundle/fashion_recommendations/dev/environments/base-core.yml"
-	@echo "5. Restart notebook environment"
 
-# Deploy bundle to environments
-deploy:
+# Full deployment workflow: update notebooks + deploy bundle
+deploy-dev: update-notebooks-dev
+	@echo "Deploying bundle to dev..."
 	databricks bundle deploy -t dev
+	@echo "✓ Deployed to dev environment"
 
-deploy-staging:
+deploy-staging: update-notebooks-staging
+	@echo "Deploying bundle to staging..."
 	databricks bundle deploy -t staging
+	@echo "✓ Deployed to staging environment"
 
-deploy-prod:
+deploy-prod: update-notebooks-prod
+	@echo "Deploying bundle to prod..."
 	databricks bundle deploy -t prod
+	@echo "✓ Deployed to prod environment"
+
+# Alias for deploy-dev
+deploy: deploy-dev
+
+# Run tests
+test:
+	poetry run pytest
 
 # Clean temporary files
 clean:

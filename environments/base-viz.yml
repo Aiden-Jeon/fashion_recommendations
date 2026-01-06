@@ -1,22 +1,18 @@
 # Base Environment with Visualization Dependencies
 # For notebooks that need plotting/visualization capabilities
 # Managed via Poetry - regenerate with: poetry export --extras viz -f requirements.txt --without-hashes -o requirements-viz.txt
+#
+# Note: Databricks serverless requires dependencies as a flat list of pip packages (no Conda format)
 
-name: fashion-recs-viz
-channels:
-  - defaults
+environment_version: '4'
 
 dependencies:
-  - python>=3.11,<3.13
-  - pip
-  - pip:
-      # Core dependencies
-      - mlflow>=3.0.0
-      - databricks-feature-engineering>=0.2.0
-      - pandas>=1.5.0
-      - numpy>=1.24.0
-      - scikit-learn>=1.3.0
-
-      # Visualization dependencies
-      - matplotlib>=3.7.0
-      - seaborn>=0.12.0
+  # Core dependencies
+  - mlflow>=3.0.0
+  - databricks-feature-engineering>=0.2.0
+  - pandas>=1.5.0
+  - numpy>=1.24.0
+  - scikit-learn>=1.3.0
+  # Visualization dependencies
+  - matplotlib>=3.7.0
+  - seaborn>=0.12.0

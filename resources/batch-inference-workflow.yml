@@ -7,7 +7,7 @@ resources:
       tasks:
         - task_key: batch_inference
           notebook_task:
-            notebook_path: ../deployment/batch_inference/notebooks/batch_inference.py
+            notebook_path: ../deployment/batch_inference/notebooks/batch_inference.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}

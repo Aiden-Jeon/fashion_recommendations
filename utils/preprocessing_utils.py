@@ -288,6 +288,95 @@ def prepare_dataloaders(
     return train_loader, val_loader
 
 
+def prepare_dataloaders_distributed(
+    train_sequences_pd,
+    val_sequences_pd,
+    encoder: ArticleEncoder,
+    batch_size: int = 256,
+    sequence_length: int = 10,
+    num_workers: int = 4,
+    rank: int = 0,
+    world_size: int = 1
+) -> Tuple[DataLoader, DataLoader]:
+    """
+    Prepare PyTorch DataLoaders for distributed training
+
+    Args:
+        train_sequences_pd: Pandas DataFrame with training sequences
+        val_sequences_pd: Pandas DataFrame with validation sequences
+        encoder: Fitted ArticleEncoder
+        batch_size: Batch size per GPU
+        sequence_length: Fixed sequence length
+        num_workers: Number of workers for data loading
+        rank: Process rank in distributed training
+        world_size: Total number of processes
+
+    Returns:
+        train_loader, val_loader (with DistributedSampler)
+    """
+    from torch.utils.data.distributed import DistributedSampler
+
+    def pd_to_dataset(df_pd) -> SequenceDataset:
+        """Convert Pandas DataFrame to PyTorch Dataset"""
+        customer_ids = []
+        input_sequences = []
+        target_articles = []
+
+        for _, row in df_pd.iterrows():
+            customer_ids.append(row['customer_id'])
+            # Encode sequences
+            input_seq_encoded = encoder.encode_batch(row['input_sequence'])
+            target_encoded = encoder.encode_batch(row['target_articles'])
+            input_sequences.append(input_seq_encoded)
+            target_articles.append(target_encoded)
+
+        return SequenceDataset(
+            customer_ids=customer_ids,
+            input_sequences=input_sequences,
+            target_articles=target_articles,
+            sequence_length=sequence_length,
+            padding_idx=encoder.padding_idx
+        )
+
+    # Create datasets
+    train_dataset = pd_to_dataset(train_sequences_pd)
+    val_dataset = pd_to_dataset(val_sequences_pd)
+
+    # Create distributed samplers
+    train_sampler = DistributedSampler(
+        train_dataset,
+        num_replicas=world_size,
+        rank=rank,
+        shuffle=True
+    )
+
+    val_sampler = DistributedSampler(
+        val_dataset,
+        num_replicas=world_size,
+        rank=rank,
+        shuffle=False
+    )
+
+    # Create dataloaders
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        sampler=train_sampler,
+        num_workers=num_workers,
+        pin_memory=True
+    )
+
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        sampler=val_sampler,
+        num_workers=num_workers,
+        pin_memory=True
+    )
+
+    return train_loader, val_loader
+
+
 def encode_article_features(
     articles_df: DataFrame,
     encoder: ArticleEncoder

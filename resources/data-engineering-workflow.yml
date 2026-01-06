@@ -8,7 +8,7 @@ resources:
         # Step 1: Load raw data - uses serverless compute by default
         - task_key: load_data
           notebook_task:
-            notebook_path: ../data_engineering/notebooks/01_load_data.py
+            notebook_path: ../data_engineering/notebooks/01_load_data.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
@@ -20,7 +20,7 @@ resources:
           depends_on:
             - task_key: load_data
           notebook_task:
-            notebook_path: ../data_engineering/notebooks/02_create_features.py
+            notebook_path: ../data_engineering/notebooks/02_create_features.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
@@ -31,7 +31,7 @@ resources:
           depends_on:
             - task_key: create_features
           notebook_task:
-            notebook_path: ../data_engineering/notebooks/03_create_splits.py
+            notebook_path: ../data_engineering/notebooks/03_create_splits.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}

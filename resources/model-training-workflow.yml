@@ -5,7 +5,18 @@ resources:
       name: ${bundle.target}-fashion-recs-model-training
 
       environments:
-        - environment_key: lstm_env
+        # Core environment for basic models (popularity)
+        - environment_key: core_env
+          spec:
+            dependencies:
+              - mlflow>=3.0.0
+              - databricks-feature-engineering>=0.2.0
+              - pandas>=1.5.0
+              - numpy>=1.24.0
+              - scikit-learn>=1.3.0
+
+        # Visualization environment for models needing plots (age_rules, ensemble)
+        - environment_key: viz_env
           spec:
             dependencies:
               - mlflow>=3.0.0
@@ -14,56 +25,74 @@ resources:
               - numpy>=1.24.0
               - scikit-learn>=1.3.0
               - matplotlib>=3.7.0
+              - seaborn>=0.12.0
+
+        # Deep learning environment for LSTM model
+        - environment_key: dl_env
+          spec:
+            dependencies:
+              - mlflow>=3.0.0
+              - databricks-feature-engineering>=0.2.0
+              - databricks-sdk>=0.17.0
+              - pandas>=1.5.0
+              - numpy>=1.24.0
+              - scikit-learn>=1.3.0
+              - matplotlib>=3.7.0
               - torch>=2.0.0
               - torchvision>=0.15.0
               - tqdm>=4.65.0
-            client: "1"
 
       tasks:
-        # Train Popularity Baseline Model - uses serverless compute by default
+        # Train Popularity Baseline Model - uses core environment
         - task_key: train_popularity
           notebook_task:
-            notebook_path: ../training/notebooks/train_popularity.py
+            notebook_path: ../training/notebooks/train_popularity.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
               experiment_name: ${var.experiment_models}
               model_name: ${var.model_popularity}
+          environment_key: viz_env
 
-        # Train Age-Based Rules Model - uses serverless compute by default
+        # Train Age-Based Rules Model - uses visualization environment
         - task_key: train_age_rules
           notebook_task:
-            notebook_path: ../training/notebooks/train_age_rules.py
+            notebook_path: ../training/notebooks/train_age_rules.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
               experiment_name: ${var.experiment_models}
               model_name: ${var.model_age_rules}
+          environment_key: viz_env
 
-        # Train LSTM Model
+        # Train LSTM Model - Uses Serverless GPU (A10) with deep learning environment
+        # Note: Serverless GPU configuration is handled inside the notebook using @distributed decorator
         - task_key: train_lstm
           notebook_task:
-            notebook_path: ../training/notebooks/train_lstm.py
+            notebook_path: ../training/notebooks/train_lstm.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
               experiment_name: ${var.experiment_models}
               model_name: ${var.model_lstm}
-          environment_key: lstm_env
+              num_gpus: "8"
+              gpu_type: "A10"
+          environment_key: dl_env
 
-        # Train Ensemble Model (depends on all base models)
+        # Train Ensemble Model (depends on all base models) - uses visualization environment
         - task_key: train_ensemble
           depends_on:
             - task_key: train_popularity
             - task_key: train_age_rules
             - task_key: train_lstm
           notebook_task:
-            notebook_path: ../training/notebooks/train_ensemble.py
+            notebook_path: ../training/notebooks/train_ensemble.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
               experiment_name: ${var.experiment_models}
               model_name: ${var.model_ensemble}
+          environment_key: viz_env
 
       # Manual trigger for now
       # schedule:
