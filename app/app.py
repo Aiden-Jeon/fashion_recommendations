@@ -19,9 +19,52 @@ from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from db import query_sql, close_all_connections
+from db import query_sql, close_all_connections, cached_query, clear_cache
 from db import set_current_user_token  # OBO: set token per request
 from settings import get_settings
+
+
+# ============== Cached Filter Options ==============
+@cached_query(ttl_seconds=300)  # 5분 캐시
+def get_product_categories() -> list[str]:
+    """Get all product categories (cached)."""
+    settings = get_settings()
+    query = f"""
+    SELECT DISTINCT product_group_name 
+    FROM {settings.full_table_name}.articles_synced 
+    WHERE product_group_name IS NOT NULL
+    ORDER BY product_group_name
+    """
+    df = query_sql(query)
+    return ["ALL"] + df["product_group_name"].tolist()
+
+
+@cached_query(ttl_seconds=300)
+def get_color_options() -> list[str]:
+    """Get all color options (cached)."""
+    settings = get_settings()
+    query = f"""
+    SELECT DISTINCT colour_group_name 
+    FROM {settings.full_table_name}.articles_synced 
+    WHERE colour_group_name IS NOT NULL
+    ORDER BY colour_group_name
+    """
+    df = query_sql(query)
+    return ["ALL"] + df["colour_group_name"].tolist()
+
+
+@cached_query(ttl_seconds=300)
+def get_department_options() -> list[str]:
+    """Get all department options (cached)."""
+    settings = get_settings()
+    query = f"""
+    SELECT DISTINCT department_name 
+    FROM {settings.full_table_name}.articles_synced 
+    WHERE department_name IS NOT NULL
+    ORDER BY department_name
+    """
+    df = query_sql(query)
+    return ["ALL"] + df["department_name"].tolist()
 
 app = FastAPI(title="Fashion Recommendations Dashboard")
 templates = Jinja2Templates(directory="templates")
@@ -69,6 +112,9 @@ def build_main_nav(active_slug: str) -> List[Dict[str, object]]:
         {"slug": "demographics", "label": "고객 인구통계", "url": "/demographics"},
         {"slug": "timeseries", "label": "시계열 분석", "url": "/timeseries"},
         {"slug": "explorer", "label": "상품 탐색기", "url": "/explorer"},
+        {"slug": "customers", "label": "고객 목록", "url": "/customers"},
+        {"slug": "transactions", "label": "거래 내역 조회", "url": "/transactions"},
+        {"slug": "personalization", "label": "개인화 추천 진단", "url": "/personalization"},
     ]
     for item in nav_items:
         item["active"] = item["slug"] == active_slug
@@ -129,15 +175,8 @@ def bestsellers(
 
     df = query_sql(query, params if params else None)
 
-    # Available categories
-    cat_query = f"""
-    SELECT DISTINCT product_group_name 
-    FROM {settings.full_table_name}.articles_synced 
-    WHERE product_group_name IS NOT NULL
-    ORDER BY product_group_name
-    """
-    categories_df = query_sql(cat_query)
-    categories = ["ALL"] + categories_df["product_group_name"].tolist()
+    # Available categories (cached)
+    categories = get_product_categories()
 
     # Prepare products data
     products = []
@@ -437,15 +476,10 @@ def explorer(
 
     df = query_sql(query, params if params else None)
 
-    # Filters
-    cat_query = f"SELECT DISTINCT product_group_name FROM {settings.full_table_name}.articles_synced WHERE product_group_name IS NOT NULL ORDER BY product_group_name"
-    categories = ["ALL"] + query_sql(cat_query)["product_group_name"].tolist()
-
-    color_query = f"SELECT DISTINCT colour_group_name FROM {settings.full_table_name}.articles_synced WHERE colour_group_name IS NOT NULL ORDER BY colour_group_name"
-    colors = ["ALL"] + query_sql(color_query)["colour_group_name"].tolist()
-
-    dept_query = f"SELECT DISTINCT department_name FROM {settings.full_table_name}.articles_synced WHERE department_name IS NOT NULL ORDER BY department_name"
-    departments = ["ALL"] + query_sql(dept_query)["department_name"].tolist()
+    # Filters (cached)
+    categories = get_product_categories()
+    colors = get_color_options()
+    departments = get_department_options()
 
     # Records
     products = []
@@ -493,6 +527,181 @@ def explorer(
     return templates.TemplateResponse("explorer.html", context)
 
 
+@app.get("/transactions", response_class=HTMLResponse)
+def transactions(
+    request: Request,
+    customer_id: str = Query(""),
+    category: str = Query("ALL"),
+    department: str = Query("ALL"),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    """Transaction history page."""
+    query = f"""
+    SELECT 
+      t.t_dat,
+      t.customer_id,
+      t.article_id,
+      t.price,
+      t.sales_channel_id,
+      a.prod_name,
+      a.product_group_name,
+      a.colour_group_name,
+      a.department_name
+    FROM {settings.full_table_name}.transactions_synced t
+    JOIN {settings.full_table_name}.articles_synced a
+      ON t.article_id = a.article_id
+    WHERE 1=1
+    """
+
+    params = []
+    if customer_id:
+        query += " AND t.customer_id LIKE ?"
+        params.append(f"%{customer_id}%")
+    if category != "ALL":
+        query += " AND a.product_group_name = ?"
+        params.append(category)
+    if department != "ALL":
+        query += " AND a.department_name = ?"
+        params.append(department)
+    if start_date:
+        query += " AND t.t_dat >= ?"
+        params.append(start_date)
+    if end_date:
+        query += " AND t.t_dat <= ?"
+        params.append(end_date)
+
+    # Total count for pagination
+    count_query = f"SELECT COUNT(*) as total FROM ({query}) t"
+    total_count = query_sql(count_query, params if params else None)["total"].iloc[0]
+
+    # Pagination
+    offset = (page - 1) * page_size
+    query += f" ORDER BY t.t_dat DESC LIMIT {page_size} OFFSET {offset}"
+
+    df = query_sql(query, params if params else None)
+
+    # Filters (cached)
+    categories = get_product_categories()
+    departments = get_department_options()
+
+    # Prepare transactions data
+    transactions_list = []
+    for _, row in df.iterrows():
+        transactions_list.append(
+            {
+                "t_dat": row["t_dat"],
+                "customer_id": row["customer_id"],
+                "article_id": int(row["article_id"]),
+                "price": float(row["price"]),
+                "sales_channel_id": int(row["sales_channel_id"]),
+                "prod_name": row["prod_name"],
+                "product_group_name": row["product_group_name"],
+                "colour_group_name": row["colour_group_name"],
+                "department_name": row["department_name"],
+                "image_url": image_url(int(row["article_id"])),
+            }
+        )
+
+    total_pages = (total_count + page_size - 1) // page_size
+
+    context = {
+        "request": request,
+        "main_nav": build_main_nav("transactions"),
+        "transactions": transactions_list,
+        "categories": categories,
+        "departments": departments,
+        "filters": {
+            "customer_id": customer_id,
+            "category": category,
+            "department": department,
+            "start_date": start_date or "",
+            "end_date": end_date or "",
+        },
+        "pagination": {
+            "current": page,
+            "total_pages": total_pages,
+            "total_count": total_count,
+            "has_prev": page > 1,
+            "has_next": page < total_pages,
+        },
+    }
+
+    return templates.TemplateResponse("transactions.html", context)
+
+
+@app.get("/customers", response_class=HTMLResponse)
+def customers(
+    request: Request,
+    search: str = Query(""),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    """Customer list page."""
+    query = f"""
+    SELECT 
+      customer_id,
+      age_bin,
+      club_member_status,
+      fashion_news_frequency,
+      total_spent,
+      num_purchases
+    FROM {settings.full_table_name}.customer_demographics_synced
+    WHERE 1=1
+    """
+
+    params = []
+    if search:
+        query += " AND customer_id LIKE ?"
+        params.append(f"%{search}%")
+
+    # Total count
+    count_query = f"SELECT COUNT(*) as total FROM ({query}) t"
+    total_count = query_sql(count_query, params if params else None)["total"].iloc[0]
+
+    # Pagination
+    offset = (page - 1) * page_size
+    query += f" ORDER BY total_spent DESC LIMIT {page_size} OFFSET {offset}"
+
+    df = query_sql(query, params if params else None)
+
+    # Prepare customers data
+    customers_list = []
+    for _, row in df.iterrows():
+        customers_list.append(
+            {
+                "customer_id": row["customer_id"],
+                "age_bin": row["age_bin"],
+                "club_member_status": row["club_member_status"],
+                "fashion_news_frequency": row["fashion_news_frequency"],
+                "total_spent": float(row["total_spent"] or 0),
+                "num_purchases": int(row["num_purchases"] or 0),
+            }
+        )
+
+    total_pages = (total_count + page_size - 1) // page_size
+
+    context = {
+        "request": request,
+        "main_nav": build_main_nav("customers"),
+        "customers": customers_list,
+        "filters": {
+            "search": search,
+        },
+        "pagination": {
+            "current": page,
+            "total_pages": total_pages,
+            "total_count": total_count,
+            "has_prev": page > 1,
+            "has_next": page < total_pages,
+        },
+    }
+
+    return templates.TemplateResponse("customers.html", context)
+
+
 @app.get("/api/image")
 def get_image(article_id: int = Query(...)):
     """Serve product image from volume."""
@@ -508,6 +717,115 @@ def get_image(article_id: int = Query(...)):
         return Response(content=placeholder, media_type="image/png")
 
 
+@app.get("/personalization", response_class=HTMLResponse)
+def personalization(
+    request: Request,
+    customer_id: str = Query(""),
+):
+    """Model personalization analysis page."""
+    predictions = []
+    
+    if customer_id:
+        # 1. Fetch predictions for the customer
+        pred_query = f"""
+        SELECT 
+            customer_id,
+            predicted_articles,
+            model_name,
+            model_version,
+            model_alias,
+            prediction_timestamp,
+            batch_id
+        FROM jongseob_demo.dev_fashion_recommendations.predictions_synced
+        WHERE customer_id = ?
+        ORDER BY prediction_timestamp DESC
+        """
+        pred_df = query_sql(pred_query, [customer_id])
+        
+        if not pred_df.empty:
+            # 2. Collect all unique article IDs
+            all_article_ids = set()
+            parsed_preds = []
+            
+            for _, row in pred_df.iterrows():
+                # Handle potentially list-like string or space-separated string
+                raw_articles = str(row["predicted_articles"])
+                # Remove brackets if present (style: [123, 456])
+                clean_articles = raw_articles.replace("[", "").replace("]", "").replace("'", "").replace('"', "")
+                # Split by comma or space
+                article_ids = [aid.strip() for aid in clean_articles.replace(",", " ").split() if aid.strip()]
+                
+                # Keep top 12 for display
+                article_ids = article_ids[:12]
+                all_article_ids.update(article_ids)
+                
+                parsed_preds.append({
+                    "info": row,
+                    "article_ids": article_ids
+                })
+            
+            # 3. Fetch details for these articles
+            if all_article_ids:
+                placeholders = ",".join(["?"] * len(all_article_ids))
+                article_query = f"""
+                SELECT 
+                    article_id,
+                    prod_name,
+                    product_group_name,
+                    detail_desc
+                FROM {settings.full_table_name}.articles_synced
+                WHERE article_id IN ({placeholders})
+                """
+                # Convert to strings for query param if they are strings in the IDs list
+                params = list(all_article_ids)
+                articles_df = query_sql(article_query, params)
+                
+                # Create a lookup dict
+                articles_map = {}
+                for _, row in articles_df.iterrows():
+                    aid = str(row["article_id"]) # Ensure string key
+                    articles_map[aid] = {
+                        "name": row["prod_name"],
+                        "category": row["product_group_name"],
+                        "desc": row["detail_desc"],
+                        "image_url": image_url(int(aid))
+                    }
+                
+                # 4. Enrich predictions with article details
+                for pred in parsed_preds:
+                    items = []
+                    for aid in pred["article_ids"]:
+                        details = articles_map.get(aid)
+                        if details:
+                            items.append(details)
+                        else:
+                            # Fallback if article not found
+                            items.append({
+                                "name": f"Unknown Item ({aid})",
+                                "category": "Unknown",
+                                "desc": "",
+                                "image_url": image_url(int(aid) if aid.isdigit() else 0)
+                            })
+                    
+                    predictions.append({
+                        "model_name": pred["info"]["model_name"],
+                        "model_version": pred["info"]["model_version"],
+                        "model_alias": pred["info"]["model_alias"],
+                        "timestamp": pred["info"]["prediction_timestamp"],
+                        "batch_id": pred["info"]["batch_id"],
+                        "recommended_items": items
+                    })
+
+    context = {
+        "request": request,
+        "main_nav": build_main_nav("personalization"),
+        "customer_id": customer_id,
+        "predictions": predictions,
+    }
+
+    return templates.TemplateResponse("personalization.html", context)
+
+
 @app.get("/metrics")
 def metrics():
     """Metrics endpoint for monitoring and health checks."""
@@ -517,3 +835,11 @@ def metrics():
         "application": "Fashion Recommendations Dashboard",
         "version": "1.0.0",
     }
+
+
+@app.post("/api/cache/clear")
+def api_clear_cache():
+    """Clear all cached query results."""
+    clear_cache()
+    return {"status": "ok", "message": "Cache cleared"}
+

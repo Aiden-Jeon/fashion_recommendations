@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}고객 목록 - Fashion Dashboard{% endblock %}
+
+{% block sidebar %}
+<aside class="filters-panel">
+    <details class="filters-toggle" open>
+        <summary>검색 <span class="count-badge">{{ "{:,}".format(pagination.total_count) }}명</span></summary>
+        <form method="get" class="filters-form">
+            <label>
+                고객 ID
+                <input type="text" name="search" value="{{ filters.search }}" placeholder="고객 ID 검색...">
+            </label>
+
+            <div class="filter-actions">
+                <button type="submit" class="button primary">검색</button>
+                <a href="/customers" class="button secondary">초기화</a>
+            </div>
+        </form>
+    </details>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="content-title">
+        <h2>고객 목록</h2>
+        <span class="total-count-note">총 {{ "{:,}".format(pagination.total_count) }}명의 고객이 있습니다.</span>
+    </div>
+</div>
+
+<div class="stats-table">
+    <table>
+        <thead>
+            <tr>
+                <th>고객 ID</th>
+                <th>연령대</th>
+                <th>멤버십 상태</th>
+                <th>뉴스레터 구독</th>
+                <th>총 지출액</th>
+                <th>구매 횟수</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in customers %}
+            <tr>
+                <td>
+                    <a href="/transactions?customer_id={{ c.customer_id }}"
+                        style="color: var(--primary); font-weight: 600; text-decoration: none; word-break: break-all;">
+                        {{ c.customer_id }}
+                    </a>
+                </td>
+                <td>{{ c.age_bin or '-' }}</td>
+                <td>{{ c.club_member_status or '-' }}</td>
+                <td>{{ c.fashion_news_frequency or '-' }}</td>
+                <td>{{ "{:,.0f}".format(c.total_spent) }}</td>
+                <td>{{ "{:,}".format(c.num_purchases) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: var(--muted);">
+                    검색 결과가 없습니다.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if pagination.total_pages > 1 %}
+<nav class="pagination">
+    <div class="pagination-controls">
+        {% if pagination.has_prev %}
+        <a href="?page={{ pagination.current - 1 }}&search={{ filters.search }}" class="page-link">이전</a>
+        {% else %}
+        <span class="page-link disabled">이전</span>
+        {% endif %}
+
+        <span class="page-link active">{{ pagination.current }} / {{ pagination.total_pages }}</span>
+
+        {% if pagination.has_next %}
+        <a href="?page={{ pagination.current + 1 }}&search={{ filters.search }}" class="page-link">다음</a>
+        {% else %}
+        <span class="page-link disabled">다음</span>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}
+</div>
+{% endblock %}

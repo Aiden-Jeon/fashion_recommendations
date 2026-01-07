@@ -17,4 +17,4 @@ env:
   # Optional: if you added a "SQL warehouse" resource in the Apps UI
   # this injects the warehouse id into env for your db.py to pick up
   - name: DATABRICKS_WAREHOUSE_ID
-    valueFrom: "sql-warehouse"
+    valueFrom: "da6517088f89d2ff"

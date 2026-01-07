@@ -5,6 +5,7 @@ import logging
 import os
 import threading
 import time
+from functools import wraps
 from typing import Any, Callable, Optional
 
 # Load .env file first (for local development)
@@ -18,6 +19,44 @@ from databricks.sdk import WorkspaceClient
 from settings import get_settings
 
 logger = logging.getLogger("fashion_app.db")
+
+# ============== TTL Cache ==============
+_cache: dict[str, tuple[Any, float]] = {}
+_cache_lock = threading.Lock()
+DEFAULT_CACHE_TTL = 300  # 5 minutes
+
+
+def cached_query(ttl_seconds: int = DEFAULT_CACHE_TTL):
+    """Decorator to cache query results with TTL."""
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Create cache key from function name and arguments
+            cache_key = f"{func.__name__}:{str(args)}:{str(sorted(kwargs.items()))}"
+            
+            with _cache_lock:
+                if cache_key in _cache:
+                    result, cached_time = _cache[cache_key]
+                    if time.time() - cached_time < ttl_seconds:
+                        logger.debug(f"Cache hit for {func.__name__}")
+                        return result
+            
+            # Cache miss - execute query
+            result = func(*args, **kwargs)
+            
+            with _cache_lock:
+                _cache[cache_key] = (result, time.time())
+            
+            return result
+        return wrapper
+    return decorator
+
+
+def clear_cache() -> None:
+    """Clear all cached query results."""
+    with _cache_lock:
+        _cache.clear()
+    logger.info("Query cache cleared")
 
 settings = get_settings()
 _workspace_client: Optional[WorkspaceClient] = None

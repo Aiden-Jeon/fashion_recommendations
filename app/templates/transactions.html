@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}거래 내역 조회 - Fashion Recs{% endblock %}
+
+{% block sidebar %}
+<aside class="filters-panel">
+    <details class="filters-toggle" open>
+        <summary>필터 <span class="count-badge">{{ "{:,}".format(pagination.total_count) }}건</span></summary>
+        <form method="get" class="filters-form">
+            <label>
+                고객 ID
+                <input type="text" name="customer_id" value="{{ filters.customer_id }}" placeholder="고객 ID 검색...">
+            </label>
+
+            <label>
+                시작일
+                <input type="date" name="start_date" value="{{ filters.start_date }}">
+            </label>
+
+            <label>
+                종료일
+                <input type="date" name="end_date" value="{{ filters.end_date }}">
+            </label>
+
+            <label>
+                카테고리
+                <select name="category">
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if cat==filters.category %}selected{% endif %}>
+                        {{ cat }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                부서
+                <select name="department">
+                    {% for dept in departments %}
+                    <option value="{{ dept }}" {% if dept==filters.department %}selected{% endif %}>
+                        {{ dept }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <div class="filter-actions">
+                <button type="submit" class="button primary">조회</button>
+                <a href="/transactions" class="button secondary">초기화</a>
+            </div>
+        </form>
+    </details>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="content-title">
+        <h2>거래 내역 조회</h2>
+        <span class="total-count-note">총 {{ "{:,}".format(pagination.total_count) }}건의 거래가 발견되었습니다.</span>
+    </div>
+</div>
+
+{% if transactions %}
+<div class="product-grid">
+    {% for t in transactions %}
+    <article class="product-card">
+        <div class="product-image">
+            <img src="{{ t.image_url }}" alt="{{ t.prod_name }}" loading="lazy">
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">{{ t.prod_name }}</h3>
+            <div class="product-meta">
+                <span class="meta-item">{{ t.t_dat }}</span>
+                <span class="meta-item">{{ "%.4f"|format(t.price) }}</span>
+            </div>
+
+            <div class="product-stats">
+                <div class="stat-item">
+                    <span class="stat-label">채널</span>
+                    <span class="stat-value">
+                        {% if t.sales_channel_id == 1 %}
+                        온라인
+                        {% elif t.sales_channel_id == 2 %}
+                        오프라인
+                        {% else %}
+                        {{ t.sales_channel_id }}
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">고객</span>
+                    <span class="stat-value" title="{{ t.customer_id }}">{{ t.customer_id[:8] }}...</span>
+                </div>
+            </div>
+
+            <div class="product-category">
+                <span class="category-badge">{{ t.product_group_name }}</span>
+                <span class="category-badge">{{ t.department_name }}</span>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">거래 내역이 없습니다.</p>
+{% endif %}
+
+<!-- Pagination -->
+{% if pagination.total_pages > 1 %}
+<nav class="pagination">
+    <div class="pagination-controls">
+        {% if pagination.has_prev %}
+        <a href="?page={{ pagination.current - 1 }}&customer_id={{ filters.customer_id }}&category={{ filters.category }}&department={{ filters.department }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}"
+            class="page-link">이전</a>
+        {% else %}
+        <span class="page-link disabled">이전</span>
+        {% endif %}
+
+        <span class="page-link active">{{ pagination.current }} / {{ pagination.total_pages }}</span>
+
+        {% if pagination.has_next %}
+        <a href="?page={{ pagination.current + 1 }}&customer_id={{ filters.customer_id }}&category={{ filters.category }}&department={{ filters.department }}&start_date={{ filters.start_date }}&end_date={{ filters.end_date }}"
+            class="page-link">다음</a>
+        {% else %}
+        <span class="page-link disabled">다음</span>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}
+</div>
+{% endblock %}
