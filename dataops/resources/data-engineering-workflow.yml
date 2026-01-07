@@ -1,0 +1,50 @@
+# Data Engineering Workflow: Load data, create features, and create splits
+resources:
+  jobs:
+    data_engineering_job:
+      name: ${bundle.target}-fashion-recs-data-engineering
+
+      tasks:
+        # Step 1: Load raw data - uses serverless compute by default
+        - task_key: load_data
+          notebook_task:
+            notebook_path: ../src/01_load_data.ipynb
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              volume_path: ${var.volume_path}
+              experiment_name: ${var.experiment_data}
+
+        # Step 2: Create features - uses serverless compute by default
+        - task_key: create_features
+          depends_on:
+            - task_key: load_data
+          notebook_task:
+            notebook_path: ../src/02_create_features.ipynb
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              experiment_name: ${var.experiment_data}
+
+        # Step 3: Create train/val/test splits - uses serverless compute by default
+        - task_key: create_splits
+          depends_on:
+            - task_key: create_features
+          notebook_task:
+            notebook_path: ../src/03_create_splits.ipynb
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              experiment_name: ${var.experiment_data}
+
+      # Manual trigger for now (no schedule)
+      # Can add schedule later:
+      # schedule:
+      #   quartz_cron_expression: "0 0 7 * * ?"  # Daily at 7am
+      #   timezone_id: UTC
+
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+        - level: CAN_MANAGE_RUN
+          group_name: users

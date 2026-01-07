@@ -20,11 +20,6 @@ from pathlib import Path
 # Notebook to environment file mapping
 # Note: train_lstm uses Databricks-provided databricks_ai_v4 environment
 NOTEBOOK_ENV_MAPPING = {
-    # Data engineering notebooks
-    "data_engineering/notebooks/01_load_data.ipynb": "base-core.yml",
-    "data_engineering/notebooks/02_create_features.ipynb": "base-core.yml",
-    "data_engineering/notebooks/03_create_splits.ipynb": "base-core.yml",
-
     # Training notebooks
     "training/notebooks/train_popularity.ipynb": "base-viz.yml",
     "training/notebooks/train_age_rules.ipynb": "base-viz.yml",

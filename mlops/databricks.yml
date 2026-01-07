@@ -60,7 +60,6 @@ variables:
 
 # Include resource definitions
 include:
-  - ./resources/data-engineering-workflow.yml
   - ./resources/model-training-workflow.yml
   - ./resources/batch-inference-workflow.yml
   - ./resources/schema.yml
