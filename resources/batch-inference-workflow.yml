@@ -1,4 +1,6 @@
 # Batch Inference Workflow: Generate recommendations for all customers
+# This workflow loads all models with Champion alias from Unity Catalog
+# and generates predictions to model-specific gold tables
 resources:
   jobs:
     batch_inference_job:
@@ -11,13 +13,11 @@ resources:
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
-              model_name: ${var.model_ensemble}  # Use ensemble by default
-              input_table: ${var.catalog_name}.${var.schema_name}.customers_bronze
-              output_table: ${var.catalog_name}.${var.schema_name}.customer_recommendations_gold
 
       # Manual trigger for now
+      # Uncomment to enable daily scheduled execution
       # schedule:
-      #   quartz_cron_expression: "0 0 11 * * ?"  # Daily at 11am
+      #   quartz_cron_expression: "0 0 11 * * ?"  # Daily at 11am UTC
       #   timezone_id: UTC
 
       permissions:

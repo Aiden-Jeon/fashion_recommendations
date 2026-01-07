@@ -46,6 +46,14 @@ class TableNames:
     MODEL_PREDICTIONS_GOLD = "model_predictions_gold"
     POPULARITY_PREDICTIONS_GOLD = "popularity_predictions_gold"
     AGE_RULES_PREDICTIONS_GOLD = "age_rules_predictions_gold"
+    LSTM_PREDICTIONS_GOLD = "lstm_predictions_gold"
+    ENSEMBLE_PREDICTIONS_GOLD = "ensemble_predictions_gold"
+
+    # Synced tables (for OLTP access via Lakebase)
+    POPULARITY_PREDICTIONS_SYNCED = "popularity_predictions_synced"
+    AGE_RULES_PREDICTIONS_SYNCED = "age_rules_predictions_synced"
+    LSTM_PREDICTIONS_SYNCED = "lstm_predictions_synced"
+    ENSEMBLE_PREDICTIONS_SYNCED = "ensemble_predictions_synced"
 
     # Feature tables
     CUSTOMER_FEATURES = "customer_features"
@@ -81,6 +89,14 @@ def get_table_config(catalog_name: str, schema_name: str):
         MODEL_PREDICTIONS_GOLD = get_full_table_name(catalog_name, schema_name, TableNames.MODEL_PREDICTIONS_GOLD)
         POPULARITY_PREDICTIONS_GOLD = get_full_table_name(catalog_name, schema_name, TableNames.POPULARITY_PREDICTIONS_GOLD)
         AGE_RULES_PREDICTIONS_GOLD = get_full_table_name(catalog_name, schema_name, TableNames.AGE_RULES_PREDICTIONS_GOLD)
+        LSTM_PREDICTIONS_GOLD = get_full_table_name(catalog_name, schema_name, TableNames.LSTM_PREDICTIONS_GOLD)
+        ENSEMBLE_PREDICTIONS_GOLD = get_full_table_name(catalog_name, schema_name, TableNames.ENSEMBLE_PREDICTIONS_GOLD)
+
+        # Synced tables
+        POPULARITY_PREDICTIONS_SYNCED = get_full_table_name(catalog_name, schema_name, TableNames.POPULARITY_PREDICTIONS_SYNCED)
+        AGE_RULES_PREDICTIONS_SYNCED = get_full_table_name(catalog_name, schema_name, TableNames.AGE_RULES_PREDICTIONS_SYNCED)
+        LSTM_PREDICTIONS_SYNCED = get_full_table_name(catalog_name, schema_name, TableNames.LSTM_PREDICTIONS_SYNCED)
+        ENSEMBLE_PREDICTIONS_SYNCED = get_full_table_name(catalog_name, schema_name, TableNames.ENSEMBLE_PREDICTIONS_SYNCED)
 
         # Features
         CUSTOMER_FEATURES = get_full_table_name(catalog_name, schema_name, TableNames.CUSTOMER_FEATURES)

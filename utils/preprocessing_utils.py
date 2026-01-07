@@ -146,9 +146,12 @@ def create_train_sequences(
     """
     # For each customer sequence, create input/target pairs
     # Input: first N items, Target: next M items
+    # Need at least sequence_length + prediction_window items
+    min_length = sequence_length + prediction_window
+
     result_df = (
         sequences_df
-        .filter(col('sequence_length') > sequence_length + prediction_window)
+        .filter(col('sequence_length') >= min_length)
         .withColumn(
             'input_sequence',
             slice('sequence', 1, sequence_length)

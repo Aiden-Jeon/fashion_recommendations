@@ -1,6 +1,7 @@
 .PHONY: help update-requirements update-environments deploy-environments clean \
         update-notebooks-dev update-notebooks-staging update-notebooks-prod \
-        deploy-dev deploy-staging deploy-prod test
+        deploy-dev deploy-staging deploy-prod test \
+        run-batch-inference set-champion-alias
 
 # Default target
 help:
@@ -22,6 +23,10 @@ help:
 	@echo "  make deploy-staging         - Update notebooks + deploy to staging (recommended)"
 	@echo "  make deploy-prod            - Update notebooks + deploy to prod (recommended)"
 	@echo "  make deploy                 - Alias for deploy-dev"
+	@echo ""
+	@echo "Batch Inference:"
+	@echo "  make run-batch-inference    - Run batch inference workflow (dev)"
+	@echo "  make set-champion-alias     - Set Champion alias on model (requires MODEL and VERSION)"
 	@echo ""
 	@echo "Development:"
 	@echo "  make install                - Install dependencies with Poetry"
@@ -113,6 +118,31 @@ deploy-prod: update-notebooks-prod
 
 # Alias for deploy-dev
 deploy: deploy-dev
+
+# Run batch inference workflow
+run-batch-inference:
+	@echo "Running batch inference workflow on dev..."
+	databricks bundle run batch_inference_workflow -t dev
+	@echo "✓ Batch inference completed"
+
+# Set Champion alias on a model
+# Usage: make set-champion-alias MODEL=popularity_model VERSION=1
+# Or:    make set-champion-alias MODEL=popularity_model LATEST=true
+set-champion-alias:
+	@if [ -z "$(MODEL)" ]; then \
+		echo "Error: MODEL is required. Usage: make set-champion-alias MODEL=popularity_model VERSION=1"; \
+		exit 1; \
+	fi
+	@if [ -n "$(VERSION)" ]; then \
+		python3 scripts/set_champion_alias.py --catalog jongseob_demo --schema dev_fashion_recommendations --model $(MODEL) --version $(VERSION); \
+	elif [ "$(LATEST)" = "true" ]; then \
+		python3 scripts/set_champion_alias.py --catalog jongseob_demo --schema dev_fashion_recommendations --model $(MODEL) --latest; \
+	else \
+		echo "Error: Either VERSION or LATEST=true is required"; \
+		echo "Usage: make set-champion-alias MODEL=popularity_model VERSION=1"; \
+		echo "   Or: make set-champion-alias MODEL=popularity_model LATEST=true"; \
+		exit 1; \
+	fi
 
 # Run tests
 test:

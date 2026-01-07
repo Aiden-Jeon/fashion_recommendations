@@ -6,3 +6,12 @@ resources:
       name: ${var.schema_name}
       comment: Fashion recommendations data and models for ${bundle.target} environment
 
+  # Volume for training logs and temporary training data
+  volumes:
+    training_logs_volume:
+      catalog_name: ${var.catalog_name}
+      schema_name: ${var.schema_name}
+      name: training_logs
+      volume_type: MANAGED
+      comment: Temporary storage for model training data and logs (LSTM training pairs, encoders, etc.)
+
