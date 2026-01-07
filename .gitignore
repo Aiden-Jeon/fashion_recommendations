@@ -15,8 +15,20 @@ __pycache__/
 *.so
 .Python
 *.egg-info/
+*.egg
+.installed.cfg
 dist/
 build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 
 # Virtual environments
 .venv/
@@ -34,10 +46,18 @@ poetry.lock
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
 
 # Testing
 .pytest_cache/
@@ -50,3 +70,7 @@ htmlcov/
 # MLflow
 mlruns/
 mlartifacts/
+
+# Temporary files
+*.tmp
+*.bak

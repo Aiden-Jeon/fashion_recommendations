@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fashion Recommendations Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <header class="top-nav">
+                <nav class="main-nav">
+                    {% for item in main_nav %}
+                    <a href="{{ item.url }}" class="nav-link {% if item.active %}active{% endif %}">
+                        {{ item.label }}
+                    </a>
+                    {% endfor %}
+                </nav>
+            </header>
+            
+            {% block sidebar %}{% endblock %}
+        </div>
+        
+        <section class="grid-content">
+            {% block content %}{% endblock %}
+        </section>
+    </div>
+</body>
+</html>
+

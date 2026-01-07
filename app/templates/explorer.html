@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}상품 탐색기 - Fashion Dashboard{% endblock %}
+
+{% block sidebar %}
+<aside class="filters-panel">
+    <details class="filters-toggle" open>
+        <summary>필터 <span class="count-badge">{{ "{:,}".format(pagination.total_count) }}건</span></summary>
+        <form method="get" class="filters-form">
+            <label>
+                상품명 검색
+                <input type="text" name="search" value="{{ filters.search }}" placeholder="상품명 입력">
+            </label>
+            
+            <label>
+                카테고리
+                <select name="category">
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if cat == filters.category %}selected{% endif %}>
+                        {{ cat }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+            
+            <label>
+                색상
+                <select name="color">
+                    {% for col in colors %}
+                    <option value="{{ col }}" {% if col == filters.color %}selected{% endif %}>
+                        {{ col }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+            
+            <label>
+                부서
+                <select name="department">
+                    {% for dept in departments %}
+                    <option value="{{ dept }}" {% if dept == filters.department %}selected{% endif %}>
+                        {{ dept }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+            
+            <div class="filter-actions">
+                <button type="submit" class="button primary">검색</button>
+                <a class="button secondary" href="/explorer">초기화</a>
+            </div>
+        </form>
+    </details>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="content-title">
+        <h2>상품 탐색기</h2>
+        <span class="total-count-note">총 {{ "{:,}".format(pagination.total_count) }}개 상품</span>
+    </div>
+</div>
+
+{% if products %}
+<div class="product-grid">
+    {% for product in products %}
+    <article class="product-card">
+        <div class="product-image">
+            <img src="{{ product.image_url }}" alt="{{ product.prod_name }}" loading="lazy">
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">{{ product.prod_name }}</h3>
+            <div class="product-meta">
+                <span class="meta-item">{{ product.product_type_name }}</span>
+                <span class="meta-item">{{ product.colour_group_name }}</span>
+            </div>
+            {% if product.detail_desc %}
+            <p class="product-desc">{{ product.detail_desc[:100] }}{% if product.detail_desc|length > 100 %}...{% endif %}</p>
+            {% endif %}
+            <div class="product-stats">
+                <div class="stat-item">
+                    <span class="stat-label">거래</span>
+                    <span class="stat-value">{{ "{:,}".format(product.num_transactions) }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">매출</span>
+                    <span class="stat-value">{{ "{:,.0f}".format(product.total_revenue) }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">고객</span>
+                    <span class="stat-value">{{ "{:,}".format(product.unique_customers) }}</span>
+                </div>
+            </div>
+            <div class="product-category">
+                <span class="category-badge">{{ product.product_group_name }}</span>
+                <span class="category-badge">{{ product.department_name }}</span>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+
+{% if pagination.total_pages > 1 %}
+<nav class="pagination">
+    <div class="pagination-controls">
+        {% if pagination.has_prev %}
+        <a href="?search={{ filters.search }}&category={{ filters.category }}&color={{ filters.color }}&department={{ filters.department }}&page={{ pagination.current - 1 }}" class="page-link">이전</a>
+        {% else %}
+        <span class="page-link disabled">이전</span>
+        {% endif %}
+        
+        <span class="page-link active">{{ pagination.current }} / {{ pagination.total_pages }}</span>
+        
+        {% if pagination.has_next %}
+        <a href="?search={{ filters.search }}&category={{ filters.category }}&color={{ filters.color }}&department={{ filters.department }}&page={{ pagination.current + 1 }}" class="page-link">다음</a>
+        {% else %}
+        <span class="page-link disabled">다음</span>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}
+
+{% else %}
+<p class="empty-state">검색 결과가 없습니다.</p>
+{% endif %}
+{% endblock %}
+

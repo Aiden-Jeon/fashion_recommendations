@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}고객 인구통계 분석 - Fashion Dashboard{% endblock %}
+
+{% block sidebar %}
+<aside class="info-panel">
+    <div class="info-card">
+        <h3>분석 개요</h3>
+        <p>고객의 연령대, 클럽 멤버십 상태, 패션 뉴스 구독 현황을 분석합니다.</p>
+    </div>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="content-title">
+        <h2>고객 인구통계 분석</h2>
+    </div>
+</div>
+
+<div class="charts-container">
+    <div class="chart-section">
+        <h3>연령대별 고객 분포</h3>
+        <div class="chart-wrapper">
+            {{ age_chart | safe }}
+        </div>
+        <div class="stats-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>연령대</th>
+                        <th>고객 수</th>
+                        <th>평균 지출</th>
+                        <th>평균 구매 횟수</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in age_stats %}
+                    <tr>
+                        <td>{{ stat.age_bin }}</td>
+                        <td>{{ "{:,}".format(stat.count) }}</td>
+                        <td>{{ "{:,.2f}".format(stat.avg_spent) }}</td>
+                        <td>{{ "{:,.2f}".format(stat.avg_purchases) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="chart-section">
+        <h3>클럽 멤버 상태별 분포</h3>
+        <div class="chart-wrapper">
+            {{ club_chart | safe }}
+        </div>
+        <div class="stats-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>멤버 상태</th>
+                        <th>고객 수</th>
+                        <th>평균 지출</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in club_stats %}
+                    <tr>
+                        <td>{{ stat.club_member_status }}</td>
+                        <td>{{ "{:,}".format(stat.count) }}</td>
+                        <td>{{ "{:,.2f}".format(stat.avg_spent) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="chart-section">
+        <h3>패션 뉴스 구독 현황</h3>
+        <div class="chart-wrapper">
+            {{ news_chart | safe }}
+        </div>
+        <div class="stats-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>구독 빈도</th>
+                        <th>고객 수</th>
+                        <th>평균 지출</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in news_stats %}
+                    <tr>
+                        <td>{{ stat.fashion_news_frequency }}</td>
+                        <td>{{ "{:,}".format(stat.count) }}</td>
+                        <td>{{ "{:,.2f}".format(stat.avg_spent) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

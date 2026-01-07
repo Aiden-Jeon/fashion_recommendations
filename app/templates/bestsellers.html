@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}베스트셀러 상품 분석 - Fashion Dashboard{% endblock %}
+
+{% block sidebar %}
+<aside class="filters-panel">
+    <details class="filters-toggle" open>
+        <summary>필터</summary>
+        <form method="get" class="filters-form">
+            <label>
+                시작 날짜
+                <input type="date" name="start_date" value="{{ filters.start_date }}">
+            </label>
+            
+            <label>
+                종료 날짜
+                <input type="date" name="end_date" value="{{ filters.end_date }}">
+            </label>
+            
+            <label>
+                카테고리
+                <select name="category">
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if cat == filters.category %}selected{% endif %}>
+                        {{ cat }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+            
+            <label>
+                표시 개수
+                <input type="number" name="limit" value="{{ filters.limit }}" min="1" max="100">
+            </label>
+            
+            <div class="filter-actions">
+                <button type="submit" class="button primary">필터 적용</button>
+                <a class="button secondary" href="/">초기화</a>
+            </div>
+        </form>
+    </details>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="content-title">
+        <h2>베스트셀러 상품</h2>
+        <span class="total-count-note">상위 {{ products|length }}개 상품</span>
+    </div>
+</div>
+
+{% if products %}
+<div class="product-grid">
+    {% for product in products %}
+    <article class="product-card">
+        <div class="product-image">
+            <img src="{{ product.image_url }}" alt="{{ product.prod_name }}" loading="lazy">
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">{{ product.prod_name }}</h3>
+            <div class="product-meta">
+                <span class="meta-item">{{ product.product_type_name }}</span>
+                <span class="meta-item">{{ product.colour_group_name }}</span>
+            </div>
+            <div class="product-stats">
+                <div class="stat-item">
+                    <span class="stat-label">거래 횟수</span>
+                    <span class="stat-value">{{ "{:,}".format(product.num_transactions) }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">매출액</span>
+                    <span class="stat-value">{{ "{:,.0f}".format(product.total_revenue) }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">고객 수</span>
+                    <span class="stat-value">{{ "{:,}".format(product.unique_customers) }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">평균 가격</span>
+                    <span class="stat-value">{{ "{:,.2f}".format(product.avg_price) }}</span>
+                </div>
+            </div>
+            <div class="product-category">
+                <span class="category-badge">{{ product.product_group_name }}</span>
+                <span class="category-badge">{{ product.department_name }}</span>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">상품이 없습니다.</p>
+{% endif %}
+{% endblock %}
+

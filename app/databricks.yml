@@ -1,0 +1,28 @@
+bundle:
+  name: fashion_recommendations_dashboard
+
+resources:
+  apps:
+    dashboard_app:
+      name: "fashion-rec-app-${bundle.target}"
+      source_code_path: .
+      description: "Fashion Recommendations Dashboard"
+      user_api_scopes:
+        - sql
+        - files.files
+        - catalog.catalogs:read
+        - catalog.schemas:read
+        - catalog.tables:read
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: "https://e2-demo-field-eng.cloud.databricks.com/"
+
+  prod:
+    mode: production
+    workspace:
+      host: "https://e2-demo-field-eng.cloud.databricks.com/"
+
