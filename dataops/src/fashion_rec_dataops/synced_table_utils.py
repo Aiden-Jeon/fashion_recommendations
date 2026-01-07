@@ -13,15 +13,17 @@ def create_or_update_synced_table(
     synced_table: str,
     lakebase_instance: str,
     primary_key: List[str] = None,
-    auto_create_database: bool = True
+    auto_create_database: bool = True,
+    skip_if_exists: bool = True
 ) -> bool:
     """
     Create or update a synced table in Lakebase for OLTP access.
 
     This function:
-    1. Deletes any existing synced table with the same name
-    2. Enables Change Data Feed on the source Delta table
-    3. Creates a new synced table with triggered scheduling policy
+    1. Enables Change Data Feed on the source Delta table
+    2. Attempts to create the synced table
+    3. If table already exists and skip_if_exists=True, skips and returns success
+    4. If skip_if_exists=False, deletes and recreates the table
 
     Args:
         source_table: Source Delta table name (fully qualified: catalog.schema.table)
@@ -29,16 +31,18 @@ def create_or_update_synced_table(
         lakebase_instance: Lakebase instance name (e.g., "shared-online-store")
         primary_key: List of columns that form the primary key. If None, uses ["id"]
         auto_create_database: Whether to create database objects if missing
+        skip_if_exists: If True, skip creation if synced table already exists. If False, delete and recreate.
 
     Returns:
-        True if synced table was created successfully, False otherwise
+        True if synced table was created successfully or already exists (when skipping), False otherwise
 
     Example:
         >>> create_or_update_synced_table(
         ...     source_table="catalog.schema.customers",
         ...     synced_table="catalog.schema.customers_synced",
         ...     lakebase_instance="shared-online-store",
-        ...     primary_key=["customer_id"]
+        ...     primary_key=["customer_id"],
+        ...     skip_if_exists=True
         ... )
         True
     """
@@ -72,14 +76,15 @@ def create_or_update_synced_table(
         """)
         print(f"  ✓ Change Data Feed enabled")
 
-        # Delete existing synced table if it exists
-        try:
-            print(f"  Checking for existing synced table...")
-            w.database.delete_synced_database_table(name=synced_table)
-            print(f"  ✓ Deleted existing synced table")
-        except Exception:
-            # Table doesn't exist, which is fine
-            print(f"  No existing table to delete")
+        # Delete existing synced table if not skipping
+        if not skip_if_exists:
+            try:
+                print(f"  Checking for existing synced table...")
+                w.database.delete_synced_database_table(name=synced_table)
+                print(f"  ✓ Deleted existing synced table")
+            except Exception:
+                # Table doesn't exist, which is fine
+                print(f"  No existing table to delete")
 
         # Parse catalog and schema from synced table name
         synced_parts = synced_table.split('.')
@@ -118,6 +123,14 @@ def create_or_update_synced_table(
         return True
 
     except Exception as e:
+        error_msg = str(e).lower()
+        
+        # If table already exists and we're skipping, treat as success
+        if skip_if_exists and ("already exists" in error_msg or "already registered" in error_msg):
+            print(f"⊙ Synced table already exists, skipping: {synced_table}")
+            return True
+        
+        # Otherwise, it's a real error
         print(f"✗ Error creating synced table: {str(e)}")
         import traceback
         traceback.print_exc()
@@ -126,7 +139,8 @@ def create_or_update_synced_table(
 
 def create_multiple_synced_tables(
     table_configs: List[dict],
-    lakebase_instance: str
+    lakebase_instance: str,
+    skip_if_exists: bool = True
 ) -> dict:
     """
     Create multiple synced tables from a list of configurations.
@@ -137,6 +151,7 @@ def create_multiple_synced_tables(
             - synced_table: Synced table name (required)
             - primary_key: Primary key columns (optional, defaults to ["id"])
         lakebase_instance: Lakebase instance name
+        skip_if_exists: If True, skip creation if synced table already exists. If False, delete and recreate.
 
     Returns:
         Dictionary with synced table names as keys and success status as values
@@ -154,7 +169,7 @@ def create_multiple_synced_tables(
         ...         "primary_key": ["product_id"]
         ...     }
         ... ]
-        >>> results = create_multiple_synced_tables(configs, "shared-online-store")
+        >>> results = create_multiple_synced_tables(configs, "shared-online-store", skip_if_exists=True)
         >>> print(results)
         {'catalog.schema.customers_synced': True, 'catalog.schema.products_synced': True}
     """
@@ -162,6 +177,10 @@ def create_multiple_synced_tables(
 
     print("=" * 80)
     print(f"Creating {len(table_configs)} synced table(s)")
+    if skip_if_exists:
+        print("Mode: Skip if already exists")
+    else:
+        print("Mode: Recreate all tables")
     print("=" * 80)
 
     for i, config in enumerate(table_configs, 1):
@@ -172,7 +191,8 @@ def create_multiple_synced_tables(
             source_table=config['source_table'],
             synced_table=config['synced_table'],
             lakebase_instance=lakebase_instance,
-            primary_key=config.get('primary_key', ["id"])
+            primary_key=config.get('primary_key', ["id"]),
+            skip_if_exists=skip_if_exists
         )
 
         results[config['synced_table']] = success

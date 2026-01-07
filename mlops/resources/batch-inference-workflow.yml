@@ -6,6 +6,12 @@ resources:
     batch_inference_job:
       name: ${bundle.target}-fashion-recs-batch-inference
 
+      environments:
+        - environment_key: core_env
+          spec:
+            dependencies:
+              - ../environments/base-core.yml
+
       tasks:
         - task_key: batch_inference
           notebook_task:
@@ -13,6 +19,7 @@ resources:
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
+          environment_key: core_env
 
       # Manual trigger for now
       # Uncomment to enable daily scheduled execution

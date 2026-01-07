@@ -40,8 +40,6 @@ class TableNames:
     # App feature tables (synced to Lakebase for low-latency access)
     PRODUCT_SALES_SUMMARY = "product_sales_summary"
     PRODUCT_SALES_SUMMARY_SYNCED = "product_sales_summary_synced"
-    CATEGORY_INSIGHTS = "category_insights"
-    CATEGORY_INSIGHTS_SYNCED = "category_insights_synced"
     CUSTOMER_DEMOGRAPHICS = "customer_demographics"
     CUSTOMER_DEMOGRAPHICS_SYNCED = "customer_demographics_synced"
     TIME_SERIES_SALES = "time_series_sales"
@@ -67,13 +65,11 @@ def get_table_config(catalog_name: str, schema_name: str):
         
         # App feature tables (Delta tables)
         PRODUCT_SALES_SUMMARY = get_full_table_name(catalog_name, schema_name, TableNames.PRODUCT_SALES_SUMMARY)
-        CATEGORY_INSIGHTS = get_full_table_name(catalog_name, schema_name, TableNames.CATEGORY_INSIGHTS)
         CUSTOMER_DEMOGRAPHICS = get_full_table_name(catalog_name, schema_name, TableNames.CUSTOMER_DEMOGRAPHICS)
         TIME_SERIES_SALES = get_full_table_name(catalog_name, schema_name, TableNames.TIME_SERIES_SALES)
         
         # App feature synced tables (Lakebase OLTP)
         PRODUCT_SALES_SUMMARY_SYNCED = get_full_table_name(catalog_name, schema_name, TableNames.PRODUCT_SALES_SUMMARY_SYNCED)
-        CATEGORY_INSIGHTS_SYNCED = get_full_table_name(catalog_name, schema_name, TableNames.CATEGORY_INSIGHTS_SYNCED)
         CUSTOMER_DEMOGRAPHICS_SYNCED = get_full_table_name(catalog_name, schema_name, TableNames.CUSTOMER_DEMOGRAPHICS_SYNCED)
         TIME_SERIES_SALES_SYNCED = get_full_table_name(catalog_name, schema_name, TableNames.TIME_SERIES_SALES_SYNCED)
 

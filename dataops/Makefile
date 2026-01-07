@@ -1,7 +1,7 @@
 .PHONY: help update-requirements update-environments clean \
         update-notebooks-dev update-notebooks-prod \
         validate sync deploy-dev deploy-prod deploy \
-        run-workflow
+        run-workflow setup-synced-tables
 
 # Default target
 help:
@@ -26,6 +26,11 @@ help:
 	@echo ""
 	@echo "Workflow Commands:"
 	@echo "  make run-workflow           - Run data loading workflow (dev)"
+	@echo ""
+	@echo "Synced Tables (SQL-based):"
+	@echo "  make setup-synced-tables    - Create/update synced tables using SQL"
+	@echo "  make setup-synced-tables-dev- Create synced tables for dev environment"
+	@echo "  make setup-synced-tables-prod-Create synced tables for prod environment"
 	@echo ""
 	@echo "Development:"
 	@echo "  make install                - Install dependencies with Poetry"
@@ -89,8 +94,9 @@ deploy: deploy-dev
 # Run data loading workflow (bronze tables only)
 run-workflow:
 	@echo "Running data loading workflow on dev..."
-	databricks bundle run data_loading_job -t dev
+	databricks bundle run data_pipeline_job -t dev
 	@echo "✓ Data loading workflow completed"
+
 
 # Clean temporary files
 clean:

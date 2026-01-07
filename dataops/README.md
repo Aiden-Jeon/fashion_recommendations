@@ -16,15 +16,23 @@ Data operations project for loading raw data and preparing application-specific 
 
 ## Project Structure
 
-* `src/`: Data loading notebooks and utilities
-  * `src/01_load_data.ipynb`: Load CSV data to Bronze Delta tables
-  * `src/03_prepare_app_features.ipynb`: Prepare app-specific features
+* `src/`: Data loading notebooks, SQL scripts, and utilities
+  * `src/01_load_data.ipynb`: Load CSV data to Delta tables
+  * `src/02_create_features.ipynb`: Create aggregated feature tables
+  * `src/setup_lakebase_sync.sql`: Full sync setup (7 tables)
+  * `src/setup_lakebase_sync_minimal.sql`: Minimal sync (6 tables)
   * `src/fashion_rec_dataops/`: Shared Python utilities for data operations
 * `resources/`: Workflow configurations
-  * `resources/data-loading-workflow.yml`: Bronze table creation workflow
-  * `resources/app-data-prep-workflow.yml`: App feature preparation workflow
+  * `resources/data-pipeline-workflow.yml`: Complete data pipeline (load → features → sync)
 * `config/`: Catalog and path configurations
-* `scripts/`: Data management scripts (synced tables, etc.)
+* `scripts/`: Data management scripts
+  * `scripts/setup_synced_tables.sh`: Shell script for SQL-based syncing
+  * `scripts/manage_synced_tables.py`: Legacy Python SDK approach
+* **Documentation:**
+  * `SETUP_GUIDE.md`: Complete setup walkthrough
+  * `SYNCED_TABLES.md`: Synced tables documentation
+  * `SYNCED_TABLES_QUICK_REF.md`: Quick reference
+  * `MIGRATION_SUMMARY.md`: Python SDK → SQL migration guide
 
 
 ## Getting started
@@ -62,25 +70,137 @@ make deploy-dev
 # Deploy to prod environment (auto-updates notebooks)
 make deploy-prod
 
-# Run data loading workflow (load raw data to bronze tables)
+# Run data loading workflow (load raw data -> create features -> sync to Lakebase)
 make run-workflow
 ```
 
-**⚠️ IMPORTANT:** The `deploy-dev` and `deploy-prod` commands automatically update notebook environment metadata to point to the correct workspace paths before deployment.
+**⚠️ IMPORTANT:** 
+- The `deploy-dev` and `deploy-prod` commands automatically update notebook environment metadata to point to the correct workspace paths before deployment.
+- The workflow now includes automatic syncing to Lakebase at the end.
+- **Set SQL Warehouse ID** in `databricks.yml` before running the workflow (see [Configuration](#configuration) below).
+
+## Configuration
+
+### SQL Warehouse Setup (Required for Workflows)
+
+The data pipeline workflow automatically syncs tables to Lakebase at the end. You need to configure a SQL Warehouse ID:
+
+1. **List available warehouses:**
+   ```bash
+   databricks sql warehouses list
+   ```
+
+2. **Set the warehouse ID in `databricks.yml`:**
+   ```yaml
+   targets:
+     dev:
+       variables:
+         sql_warehouse_id: "your-warehouse-id-here"
+   ```
+
+3. **Or use environment variable:**
+   ```bash
+   export DATABRICKS_WAREHOUSE_ID=your-warehouse-id
+   ```
+
+The workflow will use this warehouse to execute the Lakebase sync SQL at the end of each pipeline run.
+
+**📖 For detailed setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md)**
 
 ## Integration with MLOps
 
-DataOps creates Bronze tables that MLOps consumes:
+DataOps pipeline flow:
 
 ```
-DataOps (this project)
-  ↓ Creates bronze tables
-  → articles_bronze, customers_bronze, transactions_bronze
-       ↓ 
+DataOps Pipeline (this project)
+  1. Load Data (01_load_data.ipynb)
+     ↓ Creates raw Delta tables
+     → articles, customers, transactions
+  
+  2. Create Features (02_create_features.ipynb)
+     ↓ Creates aggregated feature tables
+     → product_sales_summary, customer_demographics, time_series_sales
+  
+  3. Sync to Lakebase (setup_lakebase_sync_minimal.sql)
+     ↓ Creates synced tables for low-latency access
+     → *_synced tables in Lakebase (PostgreSQL)
+     ↓
+  Databricks Apps
+     → Use synced tables for fast OLTP queries
+```
+
+MLOps integration (separate project):
+```
 MLOps (../mlops/)
+  ← Reads DataOps bronze tables
   → Feature engineering (Feature Store)
   → Model training
   → Batch inference
+```
+
+## Synced Tables for Low-Latency Access
+
+This project creates synced tables in Lakebase for low-latency OLTP access by Databricks Apps. 
+
+### SQL-Based Approach (RECOMMENDED)
+
+We use SQL to create synced tables, which is simpler and more maintainable than the Python SDK approach:
+
+```bash
+# Create/update all synced tables (auto-detects warehouse)
+make setup-synced-tables
+
+# Or for specific environments
+make setup-synced-tables-dev    # For dev environment
+make setup-synced-tables-prod   # For prod environment
+
+# Optional: Set warehouse ID explicitly
+export DATABRICKS_WAREHOUSE_ID=<your_warehouse_id>
+make setup-synced-tables
+```
+
+**Note:** The script will automatically find a running SQL Warehouse if you don't provide one. To use a specific warehouse, set `DATABRICKS_WAREHOUSE_ID` environment variable.
+
+**Synced Tables Created:**
+- **Raw tables**: `articles_synced`, `customers_synced`, `transactions_synced`
+- **Feature tables**: `product_sales_summary_synced`, `customer_demographics_synced`, `time_series_sales_synced`
+
+The SQL script (`src/setup_lakebase_sync.sql`) handles:
+- Enabling Change Data Feed on source tables
+- Creating synced tables with correct primary keys
+- Setting up triggered scheduling policy
+- Verification and data quality checks
+
+### Manual SQL Execution
+
+You can also run the SQL script directly:
+
+```bash
+# With default parameters
+databricks sql execute --warehouse-id <id> --file src/setup_lakebase_sync.sql
+
+# Or use the shell script with custom parameters
+./scripts/setup_synced_tables.sh \
+  --warehouse-id <id> \
+  --catalog jongseob_demo \
+  --schema fashion_recommendations \
+  --lakebase-instance shared-online-store
+```
+
+### Legacy Python SDK Approach
+
+The Python SDK approach (`scripts/manage_synced_tables.py`) is still available but deprecated in favor of SQL:
+
+```bash
+# Create synced tables (legacy)
+python scripts/manage_synced_tables.py create \
+  --catalog jongseob_demo \
+  --schema dev_fashion_recommendations
+
+# Check status
+python scripts/manage_synced_tables.py status \
+  --catalog jongseob_demo \
+  --schema dev_fashion_recommendations
 ```
 
 ## Using the CLI Directly (Advanced)

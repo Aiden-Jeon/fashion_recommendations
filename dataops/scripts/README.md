@@ -37,7 +37,6 @@ The script manages synced tables for these app features:
 | Source Delta Table | Synced Table | Primary Key | Purpose |
 |-------------------|--------------|-------------|----------|
 | `product_sales_summary` | `product_sales_summary_synced` | `article_id` | Product sales metrics |
-| `category_insights` | `category_insights_synced` | `product_group_name`, `product_type_name` | Category analysis |
 | `customer_demographics` | `customer_demographics_synced` | `customer_id` | Customer segmentation |
 | `time_series_sales` | `time_series_sales_synced` | `date` | Time series trends |
 

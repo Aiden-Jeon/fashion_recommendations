@@ -9,38 +9,19 @@ resources:
         - environment_key: core_env
           spec:
             dependencies:
-              - mlflow>=3.0.0
-              - databricks-feature-engineering>=0.2.0
-              - pandas>=1.5.0
-              - numpy>=1.24.0
-              - scikit-learn>=1.3.0
+              - ../environments/base-core.yml
 
         # Visualization environment for models needing plots (age_rules, ensemble)
         - environment_key: viz_env
           spec:
             dependencies:
-              - mlflow>=3.0.0
-              - databricks-feature-engineering>=0.2.0
-              - pandas>=1.5.0
-              - numpy>=1.24.0
-              - scikit-learn>=1.3.0
-              - matplotlib>=3.7.0
-              - seaborn>=0.12.0
+              - ../environments/base-viz.yml
 
         # Deep learning environment for LSTM model
         - environment_key: dl_env
           spec:
             dependencies:
-              - mlflow>=3.0.0
-              - databricks-feature-engineering>=0.2.0
-              - databricks-sdk>=0.17.0
-              - pandas>=1.5.0
-              - numpy>=1.24.0
-              - scikit-learn>=1.3.0
-              - matplotlib>=3.7.0
-              - torch>=2.0.0
-              - torchvision>=0.15.0
-              - tqdm>=4.65.0
+              - ../environments/base-dl.yml
 
       tasks:
         # Train Popularity Baseline Model - uses core environment

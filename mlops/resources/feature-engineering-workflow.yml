@@ -5,8 +5,14 @@ resources:
     feature_engineering_job:
       name: ${bundle.target}-fashion-recs-feature-engineering
 
+      environments:
+        - environment_key: core_env
+          spec:
+            dependencies:
+              - ../environments/base-core.yml
+
       tasks:
-        # Step 1: Create features from bronze tables - uses serverless compute by default
+        # Step 1: Create features from bronze tables - uses serverless compute with base-core environment
         - task_key: create_features
           notebook_task:
             notebook_path: ../data_engineering/notebooks/01_create_features.ipynb
@@ -14,8 +20,9 @@ resources:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
               experiment_name: ${var.experiment_data}
+          environment_key: core_env
 
-        # Step 2: Create train/val/test splits - uses serverless compute by default
+        # Step 2: Create train/val/test splits - uses serverless compute with base-core environment
         - task_key: create_splits
           depends_on:
             - task_key: create_features
@@ -25,6 +32,7 @@ resources:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
               experiment_name: ${var.experiment_data}
+          environment_key: core_env
 
       # Manual trigger for now (no schedule)
       # Can add schedule later:
