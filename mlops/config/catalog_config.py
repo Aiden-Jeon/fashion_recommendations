@@ -6,10 +6,17 @@ This configuration supports environment-specific schemas through bundle targets:
 - staging: jongseob_demo.staging_fashion_recommendations
 - prod: jongseob_demo.prod_fashion_recommendations
 
+Source data location:
+- Raw data: jongseob_demo.fashion_recommendations (shared across all environments)
+
 Usage:
     Pass catalog_name and schema_name as notebook parameters from bundle
 """
 import os
+
+# Source data configuration (shared across all environments)
+SOURCE_CATALOG = "jongseob_demo"
+SOURCE_SCHEMA = "fashion_recommendations"
 
 
 def get_full_table_name(catalog_name: str, schema_name: str, table_suffix: str) -> str:
@@ -29,7 +36,12 @@ def get_full_table_name(catalog_name: str, schema_name: str, table_suffix: str) 
 
 # Table name suffixes (to be combined with catalog and schema from bundle)
 class TableNames:
-    # Bronze tables (raw data)
+    # Source tables (from shared source schema)
+    ARTICLES_SOURCE = "articles"
+    CUSTOMERS_SOURCE = "customers"
+    TRANSACTIONS_SOURCE = "transactions"
+    
+    # Bronze tables (raw data in environment-specific schema)
     ARTICLES_BRONZE = "articles_bronze"
     CUSTOMERS_BRONZE = "customers_bronze"
     TRANSACTIONS_BRONZE = "transactions_bronze"
@@ -69,10 +81,16 @@ def get_table_config(catalog_name: str, schema_name: str):
         catalog_name = dbutils.widgets.get("catalog_name")
         schema_name = dbutils.widgets.get("schema_name")
         tables = get_table_config(catalog_name, schema_name)
-        df = spark.table(tables.ARTICLES_BRONZE)
+        df = spark.table(tables.ARTICLES_SOURCE)  # Read from shared source schema
+        df = spark.table(tables.ARTICLES_BRONZE)  # Read from environment-specific bronze
     """
     class Tables:
-        # Bronze
+        # Source tables (from shared source schema)
+        ARTICLES_SOURCE = get_full_table_name(SOURCE_CATALOG, SOURCE_SCHEMA, TableNames.ARTICLES_SOURCE)
+        CUSTOMERS_SOURCE = get_full_table_name(SOURCE_CATALOG, SOURCE_SCHEMA, TableNames.CUSTOMERS_SOURCE)
+        TRANSACTIONS_SOURCE = get_full_table_name(SOURCE_CATALOG, SOURCE_SCHEMA, TableNames.TRANSACTIONS_SOURCE)
+        
+        # Bronze (environment-specific)
         ARTICLES_BRONZE = get_full_table_name(catalog_name, schema_name, TableNames.ARTICLES_BRONZE)
         CUSTOMERS_BRONZE = get_full_table_name(catalog_name, schema_name, TableNames.CUSTOMERS_BRONZE)
         TRANSACTIONS_BRONZE = get_full_table_name(catalog_name, schema_name, TableNames.TRANSACTIONS_BRONZE)
@@ -111,10 +129,10 @@ CATALOG = os.getenv("CATALOG_NAME", "jongseob_demo")
 SCHEMA = os.getenv("SCHEMA_NAME", "dev_fashion_recommendations")
 FULL_NAME = f"{CATALOG}.{SCHEMA}"
 
-# Legacy table names
-ARTICLES_TABLE = get_full_table_name(CATALOG, SCHEMA, TableNames.ARTICLES_BRONZE)
-CUSTOMERS_TABLE = get_full_table_name(CATALOG, SCHEMA, TableNames.CUSTOMERS_BRONZE)
-TRANSACTIONS_TABLE = get_full_table_name(CATALOG, SCHEMA, TableNames.TRANSACTIONS_BRONZE)
+# Legacy table names - use source tables from shared schema
+ARTICLES_TABLE = get_full_table_name(SOURCE_CATALOG, SOURCE_SCHEMA, TableNames.ARTICLES_SOURCE)
+CUSTOMERS_TABLE = get_full_table_name(SOURCE_CATALOG, SOURCE_SCHEMA, TableNames.CUSTOMERS_SOURCE)
+TRANSACTIONS_TABLE = get_full_table_name(SOURCE_CATALOG, SOURCE_SCHEMA, TableNames.TRANSACTIONS_SOURCE)
 TRAIN_TABLE = get_full_table_name(CATALOG, SCHEMA, TableNames.TRAIN_SILVER)
 VAL_TABLE = get_full_table_name(CATALOG, SCHEMA, TableNames.VAL_SILVER)
 TEST_TABLE = get_full_table_name(CATALOG, SCHEMA, TableNames.TEST_SILVER)
