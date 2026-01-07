@@ -1,20 +1,6 @@
 # Databricks Asset Bundle Configuration for Fashion Recommendations MLOps Project
 bundle:
-  name: fashion_recommendations
-
-# Sync configuration - deploy these files to workspace
-sync:
-  include:
-    - "environments/*.yml"
-    - "templates/**"
-    - "*.py"
-    - "*.yml"
-    - "training/**"
-    - "data_engineering/**"
-    - "deployment/**"
-    - "utils/**"
-    - "config/**"
-    - "requirements*.txt"
+  name: fashion_recommendations_mlops
 
 variables:
   # Experiments (environment-specific by deploy target: dev/staging/prod)

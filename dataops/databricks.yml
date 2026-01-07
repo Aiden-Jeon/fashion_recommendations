@@ -1,7 +1,7 @@
 # This is a Databricks asset bundle definition for fashion_rec_dataops.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
-  name: fashion_rec_dataops
+  name: fashion_recommendations_dataops
   uuid: ed081aa8-247c-41ca-918b-1ced34f39291
 
 include:

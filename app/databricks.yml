@@ -1,5 +1,5 @@
 bundle:
-  name: fashion_recommendations_dashboard
+  name: fashion_recommendations_app
 
 resources:
   apps:
