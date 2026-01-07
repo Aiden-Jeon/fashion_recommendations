@@ -7,6 +7,10 @@ import threading
 import time
 from typing import Any, Callable, Optional
 
+# Load .env file first (for local development)
+from dotenv import load_dotenv
+load_dotenv()
+
 import pandas as pd
 from databricks import sql
 from databricks.sdk import WorkspaceClient
@@ -132,10 +136,15 @@ def _get_pool(access_token: str, warehouse_id: str) -> list[sql.Connection]:
 
 def _get_connection(access_token: str) -> sql.Connection:
     """Get a connection from the per-token pool or create a new one."""
+    # Fallback to environment variable for local development
+    if not access_token:
+        access_token = os.getenv("DATABRICKS_TOKEN", "")
+    
     if not access_token:
         raise RuntimeError(
             "Missing user access token. Ensure you pass the X-Forwarded-Access-Token "
-            "from the request into set_current_user_token(...) before querying."
+            "from the request into set_current_user_token(...) before querying, "
+            "or set DATABRICKS_TOKEN in your .env file for local development."
         )
     warehouse_id, _, _ = _get_connection_config()
     pool = _get_pool(access_token, warehouse_id)

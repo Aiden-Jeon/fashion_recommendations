@@ -12,7 +12,11 @@ EnvName = Literal["dev", "prod"]
 class Settings(BaseSettings):
     """Application configuration sourced from environment variables."""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        env_file_encoding="utf-8",
+        extra="ignore"  # Ignore extra fields like DATABRICKS_HOST, DATABRICKS_TOKEN
+    )
 
     app_env: EnvName = Field(
         default="dev",

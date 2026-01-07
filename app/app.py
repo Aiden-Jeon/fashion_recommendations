@@ -6,6 +6,10 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from urllib.parse import quote
 
+# Load .env file first (for local development)
+from dotenv import load_dotenv
+load_dotenv()
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -34,7 +38,15 @@ settings = get_settings()
 # OBO middleware: capture forwarded user token
 @app.middleware("http")
 async def inject_user_token(request: Request, call_next):
+    # Try to get token from header (Databricks Apps)
     token = request.headers.get("X-Forwarded-Access-Token")
+    
+    # Fallback to env var for local development
+    if not token:
+        token = os.getenv("DATABRICKS_TOKEN")
+        if token:
+            logger.info("Using DATABRICKS_TOKEN from environment for local development")
+    
     set_current_user_token(token)
     # Optional: enforce token for pages that require SQL
     # if not token and request.url.path not in ("/metrics", "/api/image"):
