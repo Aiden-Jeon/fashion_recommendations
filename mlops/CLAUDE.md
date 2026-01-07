@@ -46,14 +46,20 @@ databricks bundle run data_engineering_workflow -t dev
 Workflow job names follow pattern: `{target}-fashion-recs-{workflow-name}`
 
 ```bash
-# Data pipeline (load, features, splits)
-databricks bundle run data_engineering_workflow -t dev
+# Data loading (DataOps - bronze tables)
+cd ../dataops && make run-workflow
+
+# Feature engineering (MLOps - Feature Store + splits)
+make run-features  # or: databricks bundle run feature_engineering_job -t dev
 
 # Model training (all models)
-databricks bundle run model_training_workflow -t dev
+make run-training  # or: databricks bundle run model_training_job -t dev
 
 # Batch inference
-databricks bundle run batch_inference_workflow -t dev
+make run-batch-inference  # or: databricks bundle run batch_inference_workflow -t dev
+
+# Full ML pipeline (features → training → inference)
+make run-ml-pipeline
 ```
 
 ### Notebook Environment Configuration
@@ -113,9 +119,10 @@ Configured in [config/catalog_config.py](config/catalog_config.py) with helper f
 
 ### Workflow Pipeline Structure
 Workflows defined in [resources/](resources/) directory as YAML files:
-1. **Data Engineering** ([data-engineering-workflow.yml](resources/data-engineering-workflow.yml)): load_data → create_features → create_splits
-2. **Model Training** ([model-training-workflow.yml](resources/model-training-workflow.yml)): Parallel training of popularity and age_rules models, followed by LSTM (GPU), then ensemble (depends on all base models)
-3. **Batch Inference** ([batch-inference-workflow.yml](resources/batch-inference-workflow.yml)): model serving and predictions
+1. **Data Loading** (DataOps project): Load raw CSV → Bronze tables
+2. **Feature Engineering** ([feature-engineering-workflow.yml](resources/feature-engineering-workflow.yml)): Bronze → Feature Store → train/val/test splits
+3. **Model Training** ([model-training-workflow.yml](resources/model-training-workflow.yml)): Parallel training of popularity and age_rules models, followed by LSTM (GPU), then ensemble (depends on all base models)
+4. **Batch Inference** ([batch-inference-workflow.yml](resources/batch-inference-workflow.yml)): model serving and predictions
 
 All tasks use serverless compute by default (no cluster configuration needed). The model training workflow defines three environment types:
 - `core_env`: Minimal dependencies for basic models
@@ -158,20 +165,22 @@ Databricks serverless includes many packages pre-installed. Only install what's 
 ### Key Modules
 - [config/catalog_config.py](config/catalog_config.py): Unity Catalog table names, `get_table_config()` helper for environment-aware access
 - [config/paths.py](config/paths.py): Volume paths and file locations
+- [utils/data_utils.py](utils/data_utils.py): Data loading utilities (load_delta_table, create_ground_truth_labels)
+- [utils/feature_utils.py](utils/feature_utils.py): Feature engineering functions (customer features, article features, RFM)
 - [utils/evaluation_utils.py](utils/evaluation_utils.py): MAP@K evaluation metrics for recommendations
 - [scripts/update_notebook_environments.py](scripts/update_notebook_environments.py): Updates notebook metadata with workspace-specific environment paths
-- [data_engineering/notebooks/](data_engineering/notebooks/): Data pipeline notebooks (01_load_data, 02_create_features, 03_create_splits)
+- [data_engineering/notebooks/](data_engineering/notebooks/): Feature engineering notebooks (02_create_features, 03_create_splits)
 - [training/notebooks/](training/notebooks/): Model training notebooks (train_popularity, train_age_rules, train_lstm, train_ensemble)
 
 **Note on notebook formats**: Notebooks exist as both `.py` (source files for version control) and `.ipynb` (Jupyter format for Databricks). The bundle deployment uses `.ipynb` files. The `update_notebook_environments.py` script modifies `.ipynb` metadata only.
 
 ### Data Flow
 1. Raw CSV files in `/Volumes/jongseob_demo/fashion_recommendations/data/`
-2. Load to Bronze tables via `01_load_data.ipynb`
-3. Create features and Feature Store tables via `02_create_features.ipynb`
-4. Create train/val/test splits via `03_create_splits.ipynb`
-5. Train models using splits, register to Unity Catalog
-6. Batch inference generates recommendations to Gold tables
+2. **DataOps**: Load to Bronze tables via `01_load_data.ipynb` (in dataops project)
+3. **MLOps**: Create features and Feature Store tables via `02_create_features.ipynb`
+4. **MLOps**: Create train/val/test splits via `03_create_splits.ipynb`
+5. **MLOps**: Train models using splits, register to Unity Catalog
+6. **MLOps**: Batch inference generates recommendations to Gold tables
 
 ### Model Registration Pattern
 Models are registered to Unity Catalog with format: `{catalog}.{schema}.{model_name}`

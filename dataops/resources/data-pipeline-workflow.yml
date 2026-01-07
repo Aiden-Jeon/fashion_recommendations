@@ -1,0 +1,66 @@
+# Data Pipeline Workflow: Load data and create features
+# Runs 01_load_data -> 02_create_features in sequence
+resources:
+  jobs:
+    data_pipeline_job:
+      name: ${bundle.target}-fashion-recs-data-pipeline
+
+      job_clusters:
+        - job_cluster_key: default
+          new_cluster:
+            spark_version: 14.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 2
+            spark_conf:
+              spark.databricks.delta.optimizeWrite.enabled: true
+              spark.databricks.delta.autoCompact.enabled: true
+
+      tasks:
+        # Task 1: Load raw data to bronze tables
+        - task_key: load_data
+          job_cluster_key: default
+          notebook_task:
+            notebook_path: ../src/01_load_data.ipynb
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              volume_path: ${var.volume_path}
+              experiment_name: ${var.experiment_data}
+          timeout_seconds: 3600
+
+        # Task 2: Create features (depends on load_data)
+        - task_key: create_features
+          depends_on:
+            - task_key: load_data
+          job_cluster_key: default
+          notebook_task:
+            notebook_path: ../src/02_create_features.ipynb
+            base_parameters:
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+          timeout_seconds: 3600
+
+      # Manual trigger for now (no schedule)
+      # Can add schedule later:
+      # schedule:
+      #   quartz_cron_expression: "0 0 2 * * ?"  # Daily at 2am
+      #   timezone_id: UTC
+
+      email_notifications:
+        on_failure:
+          - ${workspace.current_user.userName}
+
+      max_concurrent_runs: 1
+      timeout_seconds: 7200
+
+      tags:
+        project: fashion_recommendations
+        stage: ${bundle.target}
+        pipeline: data_pipeline
+
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+        - level: CAN_MANAGE_RUN
+          group_name: users
+

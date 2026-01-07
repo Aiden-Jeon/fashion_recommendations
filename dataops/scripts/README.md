@@ -1,5 +1,101 @@
 # Scripts
 
+## manage_synced_tables.py
+
+Manages Lakebase synced tables for low-latency OLTP access to app features. This script creates, deletes, and checks the status of synced tables that mirror Delta tables in Lakebase for serving to Databricks Apps.
+
+### Why Synced Tables are Needed
+
+Databricks Apps require low-latency access to data for interactive dashboards. Synced tables in Lakebase provide:
+- **Low latency**: Sub-second query response times for OLTP workloads
+- **Real-time updates**: Automatic synchronization from Delta tables using Change Data Feed
+- **Scalability**: Optimized for high-concurrency read operations
+
+### Usage
+
+```bash
+# Create all app feature synced tables
+python scripts/manage_synced_tables.py create \
+  --catalog jongseob_demo \
+  --schema dev_fashion_recommendations
+
+# Check status of synced tables
+python scripts/manage_synced_tables.py status \
+  --catalog jongseob_demo \
+  --schema dev_fashion_recommendations
+
+# Delete all synced tables
+python scripts/manage_synced_tables.py delete \
+  --catalog jongseob_demo \
+  --schema dev_fashion_recommendations
+```
+
+### App Feature Tables
+
+The script manages synced tables for these app features:
+
+| Source Delta Table | Synced Table | Primary Key | Purpose |
+|-------------------|--------------|-------------|----------|
+| `product_sales_summary` | `product_sales_summary_synced` | `article_id` | Product sales metrics |
+| `category_insights` | `category_insights_synced` | `product_group_name`, `product_type_name` | Category analysis |
+| `customer_demographics` | `customer_demographics_synced` | `customer_id` | Customer segmentation |
+| `time_series_sales` | `time_series_sales_synced` | `date` | Time series trends |
+
+### Lakebase Instance
+
+- **Default instance**: `shared-online-store`
+- Can be overridden with `--lakebase-instance` flag
+
+### Options
+
+```
+create                  Create synced tables from Delta tables
+  --catalog CATALOG     Catalog name (required)
+  --schema SCHEMA       Schema name (required)
+  --lakebase-instance   Lakebase instance name (default: shared-online-store)
+
+status                  Check status of synced tables
+  --catalog CATALOG     Catalog name (required)
+  --schema SCHEMA       Schema name (required)
+
+delete                  Delete synced tables
+  --catalog CATALOG     Catalog name (required)
+  --schema SCHEMA       Schema name (required)
+```
+
+### Example Output
+
+```
+Creating synced tables for jongseob_demo.dev_fashion_recommendations
+Lakebase instance: shared-online-store
+
+================================================================================
+Creating 4 synced table(s)
+================================================================================
+
+[1/4] Processing: jongseob_demo.dev_fashion_recommendations.product_sales_summary_synced
+--------------------------------------------------------------------------------
+Creating synced table: jongseob_demo.dev_fashion_recommendations.product_sales_summary_synced
+  Source: jongseob_demo.dev_fashion_recommendations.product_sales_summary
+  Database instance: shared-online-store
+  Primary key: ['article_id']
+  Enabling Change Data Feed on source table...
+  ✓ Change Data Feed enabled
+  No existing table to delete
+  Creating synced table...
+✓ Synced table created successfully: jongseob_demo.dev_fashion_recommendations.product_sales_summary_synced
+...
+
+================================================================================
+SYNCED TABLE CREATION SUMMARY
+================================================================================
+Total: 4
+Successful: 4
+Failed: 0
+```
+
+---
+
 ## update_notebook_environments.py
 
 Updates notebook environment metadata with workspace paths based on the target deployment environment.

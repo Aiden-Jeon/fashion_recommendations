@@ -120,36 +120,55 @@ make deploy-prod         # Deploy to production
 
 ## Running the Pipeline
 
-### 1. Data Engineering
+### 1. Data Loading (DataOps)
 
-Load data, create features, and create train/val/test splits:
+Load raw data to bronze tables (handled by DataOps project):
 ```bash
-databricks bundle run data_engineering_job -t dev
+cd ../dataops
+make run-workflow
+```
+
+This creates bronze tables that MLOps will read from.
+
+### 2. Feature Engineering (MLOps)
+
+Create features and train/val/test splits:
+```bash
+databricks bundle run feature_engineering_job -t dev
+# Or: make run-features
 ```
 
 Or run notebooks manually in the workspace:
-1. `data_engineering/notebooks/01_load_data.py`
-2. `data_engineering/notebooks/02_create_features.py`
-3. `data_engineering/notebooks/03_create_splits.py`
+1. `data_engineering/notebooks/02_create_features.ipynb`
+2. `data_engineering/notebooks/03_create_splits.ipynb`
 
-### 2. Model Training
+### 3. Model Training
 
 Train all models:
 ```bash
 databricks bundle run model_training_job -t dev
+# Or: make run-training
 ```
 
 Or run individual models:
-- `training/notebooks/train_popularity.py`
-- `training/notebooks/train_age_rules.py`
-- `training/notebooks/train_lstm.py` (coming soon)
-- `training/notebooks/train_ensemble.py` (coming soon)
+- `training/notebooks/train_popularity.ipynb`
+- `training/notebooks/train_age_rules.ipynb`
+- `training/notebooks/train_lstm.ipynb` (coming soon)
+- `training/notebooks/train_ensemble.ipynb` (coming soon)
 
-### 3. Batch Inference
+### 4. Batch Inference
 
 Generate recommendations:
 ```bash
 databricks bundle run batch_inference_job -t dev
+# Or: make run-batch-inference
+```
+
+### Full Pipeline
+
+Run entire ML pipeline (features → training → inference):
+```bash
+make run-ml-pipeline
 ```
 
 ## MLflow Experiments

@@ -24,8 +24,13 @@ help:
 	@echo "  make deploy-prod            - Update notebooks + deploy to prod (recommended)"
 	@echo "  make deploy                 - Alias for deploy-dev"
 	@echo ""
-	@echo "Batch Inference:"
+	@echo "Workflow Execution:"
+	@echo "  make run-features           - Run feature engineering workflow (dev)"
+	@echo "  make run-training           - Run model training workflow (dev)"
 	@echo "  make run-batch-inference    - Run batch inference workflow (dev)"
+	@echo "  make run-ml-pipeline        - Run full ML pipeline (features → training → inference)"
+	@echo ""
+	@echo "Model Management:"
 	@echo "  make set-champion-alias     - Set Champion alias on model (requires MODEL and VERSION)"
 	@echo ""
 	@echo "Development:"
@@ -119,11 +124,34 @@ deploy-prod: update-notebooks-prod
 # Alias for deploy-dev
 deploy: deploy-dev
 
+# Run feature engineering workflow (assumes bronze tables exist from DataOps)
+run-features:
+	@echo "Running feature engineering workflow on dev..."
+	databricks bundle run feature_engineering_job -t dev
+	@echo "✓ Feature engineering completed"
+
+# Run model training workflow
+run-training:
+	@echo "Running model training workflow on dev..."
+	databricks bundle run model_training_job -t dev
+	@echo "✓ Model training completed"
+
 # Run batch inference workflow
 run-batch-inference:
 	@echo "Running batch inference workflow on dev..."
 	databricks bundle run batch_inference_workflow -t dev
 	@echo "✓ Batch inference completed"
+
+# Run full ML pipeline sequentially
+run-ml-pipeline:
+	@echo "Running full ML pipeline on dev..."
+	@echo "Step 1/3: Feature engineering..."
+	@make run-features
+	@echo "Step 2/3: Model training..."
+	@make run-training
+	@echo "Step 3/3: Batch inference..."
+	@make run-batch-inference
+	@echo "✓ Full ML pipeline completed"
 
 # Set Champion alias on a model
 # Usage: make set-champion-alias MODEL=popularity_model VERSION=1

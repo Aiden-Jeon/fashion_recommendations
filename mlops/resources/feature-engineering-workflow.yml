@@ -1,37 +1,26 @@
-# Data Engineering Workflow: Load data, create features, and create splits
+# Feature Engineering Workflow: Create features and splits for ML training
+# Note: Assumes bronze tables already exist from DataOps data loading workflow
 resources:
   jobs:
-    data_engineering_job:
-      name: ${bundle.target}-fashion-recs-data-engineering
+    feature_engineering_job:
+      name: ${bundle.target}-fashion-recs-feature-engineering
 
       tasks:
-        # Step 1: Load raw data - uses serverless compute by default
-        - task_key: load_data
-          notebook_task:
-            notebook_path: ../src/01_load_data.ipynb
-            base_parameters:
-              catalog_name: ${var.catalog_name}
-              schema_name: ${var.schema_name}
-              volume_path: ${var.volume_path}
-              experiment_name: ${var.experiment_data}
-
-        # Step 2: Create features - uses serverless compute by default
+        # Step 1: Create features from bronze tables - uses serverless compute by default
         - task_key: create_features
-          depends_on:
-            - task_key: load_data
           notebook_task:
-            notebook_path: ../src/02_create_features.ipynb
+            notebook_path: ../data_engineering/notebooks/01_create_features.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
               experiment_name: ${var.experiment_data}
 
-        # Step 3: Create train/val/test splits - uses serverless compute by default
+        # Step 2: Create train/val/test splits - uses serverless compute by default
         - task_key: create_splits
           depends_on:
             - task_key: create_features
           notebook_task:
-            notebook_path: ../src/03_create_splits.ipynb
+            notebook_path: ../data_engineering/notebooks/02_create_splits.ipynb
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
@@ -48,3 +37,4 @@ resources:
           group_name: users
         - level: CAN_MANAGE_RUN
           group_name: users
+

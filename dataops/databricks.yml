@@ -5,19 +5,14 @@ bundle:
   uuid: ed081aa8-247c-41ca-918b-1ced34f39291
 
 include:
-  - resources/*.yml
-  - resources/*/*.yml
+  - resources/data-pipeline-workflow.yml
 
 # Variable declarations. These variables are assigned in the dev/prod targets below.
 variables:
-  catalog:
-    description: The catalog to use
-  schema:
-    description: The schema to use
   catalog_name:
-    description: Unity Catalog name
+    description: The catalog to use
   schema_name:
-    description: Schema name (environment-specific)
+    description: The schema to use
   volume_path:
     description: Path to data volume
   experiment_data:
@@ -34,10 +29,8 @@ targets:
     workspace:
       host: https://e2-demo-field-eng.cloud.databricks.com
     variables:
-      catalog: jongseob_demo
-      schema: fashion_recommendations
       catalog_name: jongseob_demo
-      schema_name: dev_fashion_recommendations
+      schema_name: fashion_recommendations
       volume_path: /Volumes/jongseob_demo/fashion_recommendations/data
       experiment_data: /Users/${workspace.current_user.userName}/experiments/fashion-recs-dev_data
   prod:
@@ -47,10 +40,8 @@ targets:
       # We explicitly deploy to /Workspace/Users/jongseob.jeon@databricks.com to make sure we only have a single copy.
       root_path: /Workspace/Users/jongseob.jeon@databricks.com/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog: jongseob_demo
-      schema: fashion_recommendations
       catalog_name: jongseob_demo
-      schema_name: prod_fashion_recommendations
+      schema_name: fashion_recommendations
       volume_path: /Volumes/jongseob_demo/fashion_recommendations/data
       experiment_data: /Shared/experiments/fashion-recs-prod_data
     permissions:

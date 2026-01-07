@@ -2,8 +2,9 @@
 """
 Update notebook environment metadata with workspace paths based on target environment.
 
-This script updates the base_environment path in notebook metadata to point to the
-correct location in the Databricks workspace after bundle deployment.
+This script automatically discovers all notebooks under the src/ directory and updates
+the base_environment path in notebook metadata to point to the correct location in the
+Databricks workspace after bundle deployment.
 
 Usage:
     python scripts/update_notebook_environments.py --target dev
@@ -14,17 +15,85 @@ Usage:
 import json
 import argparse
 import subprocess
+import yaml
 from pathlib import Path
 
 
-# Notebook to environment file mapping
-# Note: train_lstm uses Databricks-provided databricks_ai_v4 environment
-NOTEBOOK_ENV_MAPPING = {
-    # Data engineering notebooks
-    "data_engineering/notebooks/01_load_data.ipynb": "base-core.yml",
-    "data_engineering/notebooks/02_create_features.ipynb": "base-core.yml",
-    "data_engineering/notebooks/03_create_splits.ipynb": "base-core.yml",
-}
+# Default environment file for notebooks
+DEFAULT_ENV_FILE = "base-core.yml"
+
+
+def discover_notebooks(project_root: Path, src_dir: str = "src") -> dict:
+    """
+    Discover all notebooks under the specified source directory.
+    
+    Args:
+        project_root: Project root directory
+        src_dir: Source directory name to search for notebooks (default: "src")
+    
+    Returns:
+        Dictionary mapping notebook relative paths to environment file names
+    """
+    notebooks = {}
+    src_path = project_root / src_dir
+    
+    if not src_path.exists():
+        print(f"⚠ Warning: Source directory {src_path} not found")
+        return notebooks
+    
+    # Find all .ipynb files recursively
+    for notebook_path in src_path.rglob("*.ipynb"):
+        # Skip checkpoint files
+        if ".ipynb_checkpoints" in str(notebook_path):
+            continue
+        
+        # Get relative path from project root
+        rel_path = notebook_path.relative_to(project_root)
+        notebooks[str(rel_path)] = DEFAULT_ENV_FILE
+    
+    return notebooks
+
+
+def get_bundle_name(project_root: Path = None) -> str:
+    """
+    Read the bundle name from databricks.yml.
+
+    Args:
+        project_root: Project root directory. If None, auto-detect from script location.
+
+    Returns:
+        Bundle name from databricks.yml
+
+    Raises:
+        FileNotFoundError: If databricks.yml is not found
+        ValueError: If bundle name is not found in databricks.yml
+    """
+    if not project_root:
+        script_dir = Path(__file__).parent
+        project_root = script_dir.parent
+    
+    databricks_yml = project_root / "databricks.yml"
+    
+    if not databricks_yml.exists():
+        raise FileNotFoundError(
+            f"databricks.yml not found at {databricks_yml}. "
+            "Please ensure you're running the script from the correct directory."
+        )
+    
+    try:
+        with open(databricks_yml, 'r') as f:
+            config = yaml.safe_load(f)
+            bundle_name = config.get('bundle', {}).get('name')
+            
+            if not bundle_name:
+                raise ValueError(
+                    f"Bundle name not found in {databricks_yml}. "
+                    "Please ensure 'bundle.name' is defined in the YAML file."
+                )
+            
+            return bundle_name
+    except yaml.YAMLError as e:
+        raise ValueError(f"Error parsing databricks.yml: {e}")
 
 
 def get_current_user() -> str:
@@ -118,6 +187,9 @@ def update_notebook_environment(notebook_path: Path, env_file: str, workspace_ro
 
 
 def main():
+    # Get default bundle name from databricks.yml
+    default_bundle_name = get_bundle_name()
+    
     parser = argparse.ArgumentParser(
         description='Update notebook environment paths for Databricks workspace deployment'
     )
@@ -129,8 +201,8 @@ def main():
     )
     parser.add_argument(
         '--bundle-name',
-        default='fashion_recommendations',
-        help='Bundle name (default: fashion_recommendations)'
+        default=default_bundle_name,
+        help=f'Bundle name (default: {default_bundle_name})'
     )
     parser.add_argument(
         '--project-root',
@@ -166,8 +238,20 @@ def main():
     print(f"Workspace root: {workspace_root}")
     print()
 
+    # Discover all notebooks under src directory
+    notebook_mapping = discover_notebooks(project_root)
+    
+    if not notebook_mapping:
+        print("⚠ No notebooks found to update")
+        return
+    
+    print(f"Found {len(notebook_mapping)} notebook(s) to update:")
+    for notebook_rel_path in notebook_mapping.keys():
+        print(f"  - {notebook_rel_path}")
+    print()
+
     # Update notebooks with custom workspace environments
-    for notebook_rel_path, env_file in NOTEBOOK_ENV_MAPPING.items():
+    for notebook_rel_path, env_file in notebook_mapping.items():
         notebook_path = project_root / notebook_rel_path
 
         if not notebook_path.exists():
