@@ -10,7 +10,7 @@ from databricks.sdk import WorkspaceClient
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Volume path
-VOLUME_PATH = "/Volumes/jongseob_demo/fashion_recommendations/data"
+VOLUME_PATH = "/Volumes/shared/fashion_recommendations/data"
 
 # Data files
 ARTICLES_CSV = f"{VOLUME_PATH}/articles.csv"

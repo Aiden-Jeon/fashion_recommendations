@@ -24,27 +24,12 @@ AGE_RULES_CONFIG = {
     "top_n_per_segment": 12
 }
 
-# LSTM model (PyTorch simplified for demo)
-LSTM_CONFIG = {
-    "embedding_dim": 64,
-    "hidden_dim": 128,  # LSTM hidden units
-    "num_layers": 2,  # Number of LSTM layers
-    "dropout": 0.3,
-    "sequence_length": 10,  # Input sequence length
-    "min_sequence_length": 3,  # Minimum customer purchase history
-    "batch_size": 256,
-    "num_epochs": 10,
-    "learning_rate": 0.001,
-    "weight_decay": 1e-5,  # L2 regularization
-    "early_stopping_patience": 3
-}
-
 # Ensemble model
 ENSEMBLE_CONFIG = {
-    "models": ["popularity", "age_rules", "lstm"],
+    "models": ["popularity", "age_rules", "simple_mlp"],
     "weights": {
         "popularity": 0.2,
         "age_rules": 0.3,
-        "lstm": 0.5
+        "simple_mlp": 0.5
     }
 }

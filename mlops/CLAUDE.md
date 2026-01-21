@@ -88,18 +88,18 @@ make update-notebooks-prod    # Updates notebook metadata for prod workspace pat
 
 ### Environment Strategy
 Single Unity Catalog (`jongseob_demo`) with environment-specific schemas:
-- **Dev**: `jongseob_demo.dev_fashion_recommendations`
+- **Dev**: `jongseob_demo.fashion_recommendations`
 - **Staging**: `jongseob_demo.staging_fashion_recommendations`
 - **Prod**: `jongseob_demo.prod_fashion_recommendations`
 
 Models and tables are registered per environment:
-- Tables: `{catalog}.{schema}.{table_name}` (e.g., `jongseob_demo.dev_fashion_recommendations.articles_bronze`)
-- Models: `{catalog}.{schema}.{model_name}` (e.g., `jongseob_demo.dev_fashion_recommendations.popularity_model`)
+- Tables: `{catalog}.{schema}.{table_name}` (e.g., `jongseob_demo.fashion_recommendations.articles_bronze`)
+- Models: `{catalog}.{schema}.{model_name}` (e.g., `jongseob_demo.fashion_recommendations.popularity_model`)
 
 ### Configuration System
 Bundle variables in [databricks.yml](databricks.yml:19-58) are passed as parameters to all notebooks:
 - `catalog_name`: Unity Catalog name (default: `jongseob_demo`)
-- `schema_name`: Environment-specific schema (e.g., `dev_fashion_recommendations`)
+- `schema_name`: Environment-specific schema (e.g., `fashion_recommendations`)
 - `experiment_name`: MLflow experiment path (split into data and models experiments)
 - `model_name`: Model name for training notebooks
 

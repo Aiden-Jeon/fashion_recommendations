@@ -16,16 +16,16 @@ variables:
   # Unity Catalog (single catalog, schema per environment)
   catalog_name:
     description: Unity Catalog name
-    default: jongseob_demo
+    default: shared
 
   schema_name:
     description: Schema name (environment-specific)
-    default: dev_fashion_recommendations
+    default: fashion_recommendations
 
   # Volume path
   volume_path:
     description: Path to data volume
-    default: /Volumes/jongseob_demo/fashion_recommendations/data
+    default: /Volumes/shared/fashion_recommendations/data
 
   # Models (simple names - will be registered in catalog.schema)
   model_popularity:
@@ -49,7 +49,7 @@ include:
   - ./resources/feature-engineering-workflow.yml
   - ./resources/model-training-workflow.yml
   - ./resources/batch-inference-workflow.yml
-  - ./resources/schema.yml
+  - ./resources/model-deployment-workflow.yml
 
 # Environment targets
 targets:
@@ -58,10 +58,9 @@ targets:
     mode: production
     default: true
     workspace:
-      host: https://e2-demo-field-eng.cloud.databricks.com
+      host: https://e2-demo-west.cloud.databricks.com/
       root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
     variables:
-      schema_name: dev_fashion_recommendations
       # Per-user experiments for dev (bundle resolves ${workspace.current_user.userName} correctly)
       experiment_data: /Users/${workspace.current_user.userName}/experiments/fashion-recs-dev_data
       experiment_models: /Users/${workspace.current_user.userName}/experiments/fashion-recs-dev_models
@@ -70,10 +69,9 @@ targets:
   staging:
     mode: production
     workspace:
-      host: https://e2-demo-field-eng.cloud.databricks.com
+      host: https://e2-demo-west.cloud.databricks.com/
       root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
     variables:
-      schema_name: staging_fashion_recommendations
       experiment_data: /Shared/experiments/fashion-recs-staging_data
       experiment_models: /Shared/experiments/fashion-recs-staging_models
 
@@ -81,9 +79,8 @@ targets:
   prod:
     mode: production
     workspace:
-      host: https://e2-demo-field-eng.cloud.databricks.com
+      host: https://e2-demo-west.cloud.databricks.com/
       root_path: /Workspace/Shared/.bundle/${bundle.name}/${bundle.target}
     variables:
-      schema_name: prod_fashion_recommendations
       experiment_data: /Shared/experiments/fashion-recs-prod_data
       experiment_models: /Shared/experiments/fashion-recs-prod_models

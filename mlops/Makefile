@@ -162,9 +162,9 @@ set-champion-alias:
 		exit 1; \
 	fi
 	@if [ -n "$(VERSION)" ]; then \
-		python3 scripts/set_champion_alias.py --catalog jongseob_demo --schema dev_fashion_recommendations --model $(MODEL) --version $(VERSION); \
+		python3 scripts/set_champion_alias.py --catalog jongseob_demo --schema fashion_recommendations --model $(MODEL) --version $(VERSION); \
 	elif [ "$(LATEST)" = "true" ]; then \
-		python3 scripts/set_champion_alias.py --catalog jongseob_demo --schema dev_fashion_recommendations --model $(MODEL) --latest; \
+		python3 scripts/set_champion_alias.py --catalog jongseob_demo --schema fashion_recommendations --model $(MODEL) --latest; \
 	else \
 		echo "Error: Either VERSION or LATEST=true is required"; \
 		echo "Usage: make set-champion-alias MODEL=popularity_model VERSION=1"; \

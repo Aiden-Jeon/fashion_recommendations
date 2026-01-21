@@ -21,8 +21,8 @@ def get_widget_or_default(widget_name: str, default_value: str) -> str:
         Widget value if running as job, default value if running interactively
 
     Example:
-        catalog_name = get_widget_or_default("catalog_name", "jongseob_demo")
-        schema_name = get_widget_or_default("schema_name", "dev_fashion_recommendations")
+        catalog_name = get_widget_or_default("catalog_name", "shared")
+        schema_name = get_widget_or_default("schema_name", "fashion_recommendations")
     """
     try:
         # Try to get widget value (works in job mode)
@@ -34,16 +34,16 @@ def get_widget_or_default(widget_name: str, default_value: str) -> str:
         return default_value
 
 
-def get_bundle_parameters(catalog_default="jongseob_demo",
-                          schema_default="dev_fashion_recommendations",
+def get_bundle_parameters(catalog_default="shared",
+                          schema_default="fashion_recommendations",
                           experiment_default=None,
                           model_default=None):
     """
     Get all standard bundle parameters with sensible defaults.
 
     Args:
-        catalog_default: Default catalog name (default: "jongseob_demo")
-        schema_default: Default schema name (default: "dev_fashion_recommendations")
+        catalog_default: Default catalog name (default: "shared")
+        schema_default: Default schema name (default: "fashion_recommendations")
         experiment_default: Default experiment name (default: auto-generated dev path)
         model_default: Default model name (default: None, must be specified if needed)
 

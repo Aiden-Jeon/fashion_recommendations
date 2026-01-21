@@ -1,0 +1,66 @@
+# Model Deployment Workflow: Evaluate, approve, and deploy models
+# This workflow evaluates a candidate model, checks for approval, and sets the champion alias
+resources:
+  jobs:
+    model_deployment_job:
+      name: ${bundle.target}-fashion-recs-model-deployment
+
+      # Job parameters - can be passed when triggering the job
+      parameters:
+        - name: model_name
+          default: ${var.catalog_name}.${var.schema_name}.${var.model_ensemble}
+        - name: model_version
+          default: "1"
+        - name: evaluation_dataset
+          default: "val"
+
+      tasks:
+        # Task 1: Evaluate candidate model on validation dataset
+        - task_key: evaluate_model
+          notebook_task:
+            notebook_path: ../deployment/deployment_step/evaluation.ipynb
+            base_parameters:
+              # Model to evaluate (fully qualified name in Unity Catalog)
+              model_name: "{{job.parameters.model_name}}"
+              model_version: "{{job.parameters.model_version}}"
+              catalog_name: ${var.catalog_name}
+              schema_name: ${var.schema_name}
+              evaluation_dataset: "{{job.parameters.evaluation_dataset}}"
+
+        # Task 2: Check if model is approved for deployment
+        # This step verifies that the model has the 'deployment_approval' tag set to 'approved'
+        # To approve a model manually, go to Unity Catalog UI and add the tag
+        - task_key: approve_model
+          depends_on:
+            - task_key: evaluate_model
+          notebook_task:
+            notebook_path: ../deployment/deployment_step/approval.ipynb
+            base_parameters:
+              model_name: "{{job.parameters.model_name}}"
+              model_version: "{{job.parameters.model_version}}"
+              approval_tag_name: "deployment_approval"
+
+        # Task 3: Deploy model by setting champion alias
+        # This updates the 'champion' alias to point to the approved model version
+        # Batch inference jobs will automatically use the champion model
+        - task_key: deploy_model
+          depends_on:
+            - task_key: approve_model
+          notebook_task:
+            notebook_path: ../deployment/deployment_step/deployment.ipynb
+            base_parameters:
+              model_name: "{{job.parameters.model_name}}"
+              model_version: "{{job.parameters.model_version}}"
+              alias: "champion"  # Set champion alias (not staging/production)
+
+      # Manual trigger for now
+      # Uncomment to enable scheduled deployment checks
+      # schedule:
+      #   quartz_cron_expression: "0 0 10 * * MON"  # Weekly on Mondays at 10am UTC
+      #   timezone_id: UTC
+
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+        - level: CAN_MANAGE_RUN
+          group_name: users

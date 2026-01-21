@@ -2,12 +2,12 @@
 Unity Catalog and Delta table configuration
 
 This configuration supports environment-specific schemas through bundle targets:
-- dev: jongseob_demo.dev_fashion_recommendations
-- staging: jongseob_demo.staging_fashion_recommendations
-- prod: jongseob_demo.prod_fashion_recommendations
+- dev: shared.fashion_recommendations
+- staging: shared.staging_fashion_recommendations
+- prod: shared.prod_fashion_recommendations
 
 Source data location:
-- Raw data: jongseob_demo.fashion_recommendations (shared across all environments)
+- Raw data: shared.fashion_recommendations (shared across all environments)
 
 Usage:
     Pass catalog_name and schema_name as notebook parameters from bundle
@@ -15,7 +15,7 @@ Usage:
 import os
 
 # Source data configuration (shared across all environments)
-SOURCE_CATALOG = "jongseob_demo"
+SOURCE_CATALOG = "shared"
 SOURCE_SCHEMA = "fashion_recommendations"
 
 
@@ -24,8 +24,8 @@ def get_full_table_name(catalog_name: str, schema_name: str, table_suffix: str) 
     Get fully qualified table name
 
     Args:
-        catalog_name: Catalog name (e.g., "jongseob_demo")
-        schema_name: Schema name (e.g., "dev_fashion_recommendations")
+        catalog_name: Catalog name (e.g., "shared")
+        schema_name: Schema name (e.g., "fashion_recommendations")
         table_suffix: Table name suffix (e.g., "articles_bronze")
 
     Returns:
@@ -60,6 +60,7 @@ class TableNames:
     AGE_RULES_PREDICTIONS_GOLD = "age_rules_predictions_gold"
     LSTM_PREDICTIONS_GOLD = "lstm_predictions_gold"
     ENSEMBLE_PREDICTIONS_GOLD = "ensemble_predictions_gold"
+    TWO_TOWER_PREDICTIONS_GOLD = "two_tower_predictions_gold"
 
     # Synced tables (for OLTP access via Lakebase)
     POPULARITY_PREDICTIONS_SYNCED = "popularity_predictions_synced"
@@ -109,6 +110,7 @@ def get_table_config(catalog_name: str, schema_name: str):
         AGE_RULES_PREDICTIONS_GOLD = get_full_table_name(catalog_name, schema_name, TableNames.AGE_RULES_PREDICTIONS_GOLD)
         LSTM_PREDICTIONS_GOLD = get_full_table_name(catalog_name, schema_name, TableNames.LSTM_PREDICTIONS_GOLD)
         ENSEMBLE_PREDICTIONS_GOLD = get_full_table_name(catalog_name, schema_name, TableNames.ENSEMBLE_PREDICTIONS_GOLD)
+        TWO_TOWER_PREDICTIONS_GOLD = get_full_table_name(catalog_name, schema_name, TableNames.TWO_TOWER_PREDICTIONS_GOLD)
 
         # Synced tables
         POPULARITY_PREDICTIONS_SYNCED = get_full_table_name(catalog_name, schema_name, TableNames.POPULARITY_PREDICTIONS_SYNCED)
@@ -125,8 +127,8 @@ def get_table_config(catalog_name: str, schema_name: str):
 
 # Legacy support (for local development)
 # Will use dev environment by default
-CATALOG = os.getenv("CATALOG_NAME", "jongseob_demo")
-SCHEMA = os.getenv("SCHEMA_NAME", "dev_fashion_recommendations")
+CATALOG = os.getenv("CATALOG_NAME", "shared")
+SCHEMA = os.getenv("SCHEMA_NAME", "fashion_recommendations")
 FULL_NAME = f"{CATALOG}.{SCHEMA}"
 
 # Legacy table names - use source tables from shared schema

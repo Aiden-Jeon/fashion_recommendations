@@ -67,17 +67,17 @@ fashion_recommendations/
 **Single Catalog, Schema per Environment:**
 - Catalog: `jongseob_demo`
 - Schemas:
-  - `dev_fashion_recommendations` - Development
+  - `fashion_recommendations` - Development
   - `staging_fashion_recommendations` - Staging
   - `prod_fashion_recommendations` - Production
 
 **Example Tables:**
-- Dev: `jongseob_demo.dev_fashion_recommendations.articles_bronze`
+- Dev: `jongseob_demo.fashion_recommendations.articles_bronze`
 - Staging: `jongseob_demo.staging_fashion_recommendations.articles_bronze`
 - Prod: `jongseob_demo.prod_fashion_recommendations.articles_bronze`
 
 **Example Models:**
-- Dev: `jongseob_demo.dev_fashion_recommendations.popularity_model`
+- Dev: `jongseob_demo.fashion_recommendations.popularity_model`
 - Staging: `jongseob_demo.staging_fashion_recommendations.popularity_model`
 - Prod: `jongseob_demo.prod_fashion_recommendations.popularity_model`
 

@@ -52,12 +52,12 @@ def get_catalog_schema(environment: str = "dev"):
     catalog = "jongseob_demo"
 
     schema_map = {
-        "dev": "dev_fashion_recommendations",
+        "dev": "fashion_recommendations",
         "staging": "staging_fashion_recommendations",
         "prod": "prod_fashion_recommendations"
     }
 
-    schema = schema_map.get(environment, "dev_fashion_recommendations")
+    schema = schema_map.get(environment, "fashion_recommendations")
     print(f"✓ Using catalog: {catalog}, schema: {schema}")
 
     return catalog, schema

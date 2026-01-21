@@ -14,26 +14,79 @@ Usage:
 import json
 import argparse
 import subprocess
+import re
 from pathlib import Path
 
 
 # Notebook to environment file mapping
-# Note: train_lstm uses Databricks-provided databricks_ai_v4 environment
+# Note: train_simple_mlp uses Databricks-provided databricks_ai_v4 environment
 NOTEBOOK_ENV_MAPPING = {
     # Training notebooks
     "training/notebooks/train_popularity.ipynb": "base-viz.yml",
     "training/notebooks/train_age_rules.ipynb": "base-viz.yml",
     "training/notebooks/train_ensemble.ipynb": "base-viz.yml",
-    # train_lstm uses databricks_ai_v4 (handled separately)
+    # train_simple_mlp uses databricks_ai_v4 (handled separately)
 
     # Batch inference notebook
     "deployment/batch_inference/notebooks/batch_inference.ipynb": "base-core.yml",
+    
+    # Deployment step notebooks
+    "deployment/deployment_step/evaluation.ipynb": "base-core.yml",
+    "deployment/deployment_step/approval.ipynb": "base-core.yml",
+    "deployment/deployment_step/deployment.ipynb": "base-core.yml",
 }
 
 # Notebooks that use Databricks-provided environments (not custom workspace paths)
 DATABRICKS_PROVIDED_ENV_MAPPING = {
-    "training/notebooks/train_lstm.ipynb": "databricks_ai_v4",
+    "training/notebooks/train_simple_mlp.ipynb": "databricks_ai_v4",
 }
+
+
+def get_bundle_name(project_root: Path = None) -> str:
+    """
+    Read the bundle name from databricks.yml.
+
+    Args:
+        project_root: Project root directory. If None, auto-detect from script location.
+
+    Returns:
+        Bundle name from databricks.yml
+
+    Raises:
+        FileNotFoundError: If databricks.yml is not found
+        ValueError: If bundle name is not found in databricks.yml
+    """
+    if not project_root:
+        script_dir = Path(__file__).parent
+        project_root = script_dir.parent
+    
+    databricks_yml = project_root / "databricks.yml"
+    
+    if not databricks_yml.exists():
+        raise FileNotFoundError(
+            f"databricks.yml not found at {databricks_yml}. "
+            "Please ensure you're running the script from the correct directory."
+        )
+    
+    try:
+        with open(databricks_yml, 'r') as f:
+            content = f.read()
+            
+            # Simple regex to extract bundle name from YAML
+            # Matches: "name: bundle_name" or "name: 'bundle_name'" or "name: \"bundle_name\""
+            match = re.search(r'^\s*name:\s*["\']?([a-zA-Z0-9_-]+)["\']?', content, re.MULTILINE)
+            
+            if not match:
+                raise ValueError(
+                    f"Bundle name not found in {databricks_yml}. "
+                    "Please ensure 'bundle.name' is defined in the YAML file."
+                )
+            
+            return match.group(1)
+    except Exception as e:
+        if isinstance(e, (FileNotFoundError, ValueError)):
+            raise
+        raise ValueError(f"Error parsing databricks.yml: {e}")
 
 
 def get_current_user() -> str:
@@ -60,7 +113,7 @@ def get_current_user() -> str:
         return "${workspace.current_user.userName}"
 
 
-def get_workspace_path(target: str, bundle_name: str = "fashion_recommendations", user_name: str = None) -> str:
+def get_workspace_path(target: str, bundle_name: str, user_name: str = None) -> str:
     """
     Get the workspace root path for the given target environment.
 
@@ -127,6 +180,9 @@ def update_notebook_environment(notebook_path: Path, env_file: str, workspace_ro
 
 
 def main():
+    # Get default bundle name from databricks.yml
+    default_bundle_name = get_bundle_name()
+    
     parser = argparse.ArgumentParser(
         description='Update notebook environment paths for Databricks workspace deployment'
     )
@@ -138,8 +194,8 @@ def main():
     )
     parser.add_argument(
         '--bundle-name',
-        default='fashion_recommendations',
-        help='Bundle name (default: fashion_recommendations)'
+        default=default_bundle_name,
+        help=f'Bundle name (default: {default_bundle_name})'
     )
     parser.add_argument(
         '--project-root',

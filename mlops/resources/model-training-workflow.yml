@@ -8,18 +8,21 @@ resources:
         # Core environment for basic models (popularity)
         - environment_key: core_env
           spec:
+            client: "1"
             dependencies:
               - ../environments/base-core.yml
 
         # Visualization environment for models needing plots (age_rules, ensemble)
         - environment_key: viz_env
           spec:
+            client: "1"
             dependencies:
               - ../environments/base-viz.yml
 
         # Deep learning environment for LSTM model
         - environment_key: dl_env
           spec:
+            client: "1"
             dependencies:
               - ../environments/base-dl.yml
 
@@ -48,24 +51,23 @@ resources:
 
         # Train LSTM Model - Uses Serverless GPU (A10) with deep learning environment
         # Note: Serverless GPU configuration is handled inside the notebook using @distributed decorator
-        - task_key: train_lstm
-          notebook_task:
-            notebook_path: ../training/notebooks/train_lstm.ipynb
-            base_parameters:
-              catalog_name: ${var.catalog_name}
-              schema_name: ${var.schema_name}
-              experiment_name: ${var.experiment_models}
-              model_name: ${var.model_lstm}
-              num_gpus: "8"
-              gpu_type: "A10"
-          environment_key: dl_env
+        # - task_key: train_lstm
+        #   notebook_task:
+        #     notebook_path: ../training/notebooks/train_lstm.ipynb
+        #     base_parameters:
+        #       catalog_name: ${var.catalog_name}
+        #       schema_name: ${var.schema_name}
+        #       experiment_name: ${var.experiment_models}
+        #       model_name: ${var.model_lstm}
+        #       num_gpus: "8"
+        #       gpu_type: "A10"
+        #   environment_key: dl_env
 
         # Train Ensemble Model (depends on all base models) - uses visualization environment
         - task_key: train_ensemble
           depends_on:
             - task_key: train_popularity
             - task_key: train_age_rules
-            - task_key: train_lstm
           notebook_task:
             notebook_path: ../training/notebooks/train_ensemble.ipynb
             base_parameters:
