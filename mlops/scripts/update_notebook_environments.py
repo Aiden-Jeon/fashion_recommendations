@@ -19,17 +19,16 @@ from pathlib import Path
 
 
 # Notebook to environment file mapping
-# Note: train_simple_mlp uses Databricks-provided databricks_ai_v4 environment
 NOTEBOOK_ENV_MAPPING = {
     # Training notebooks
     "training/notebooks/train_popularity.ipynb": "base-viz.yml",
     "training/notebooks/train_age_rules.ipynb": "base-viz.yml",
     "training/notebooks/train_ensemble.ipynb": "base-viz.yml",
-    # train_simple_mlp uses databricks_ai_v4 (handled separately)
-
+    # Data engineering notebooks
+    "data_engineering/notebooks/01_create_features.ipynb": "base-core.yml",
+    "data_engineering/notebooks/02_create_splits.ipynb": "base-core.yml",
     # Batch inference notebook
     "deployment/batch_inference/notebooks/batch_inference.ipynb": "base-core.yml",
-    
     # Deployment step notebooks
     "deployment/deployment_step/evaluation.ipynb": "base-core.yml",
     "deployment/deployment_step/approval.ipynb": "base-core.yml",

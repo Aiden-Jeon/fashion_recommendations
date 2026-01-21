@@ -5,21 +5,21 @@ resources:
       name: ${bundle.target}-fashion-recs-model-training
 
       environments:
-        # Core environment for basic models (popularity)
+        # Core environment for basic models
         - environment_key: core_env
           spec:
             client: "1"
             dependencies:
               - ../environments/base-core.yml
 
-        # Visualization environment for models needing plots (age_rules, ensemble)
+        # Visualization environment for models needing plots
         - environment_key: viz_env
           spec:
             client: "1"
             dependencies:
               - ../environments/base-viz.yml
 
-        # Deep learning environment for LSTM model
+        # Deep learning environment for neural network models
         - environment_key: dl_env
           spec:
             client: "1"
@@ -27,7 +27,7 @@ resources:
               - ../environments/base-dl.yml
 
       tasks:
-        # Train Popularity Baseline Model - uses core environment
+        # Train Popularity Baseline Model
         - task_key: train_popularity
           notebook_task:
             notebook_path: ../training/notebooks/train_popularity.ipynb
@@ -38,7 +38,7 @@ resources:
               model_name: ${var.model_popularity}
           environment_key: viz_env
 
-        # Train Age-Based Rules Model - uses visualization environment
+        # Train Age-Based Rules Model
         - task_key: train_age_rules
           notebook_task:
             notebook_path: ../training/notebooks/train_age_rules.ipynb
@@ -49,21 +49,19 @@ resources:
               model_name: ${var.model_age_rules}
           environment_key: viz_env
 
-        # Train LSTM Model - Uses Serverless GPU (A10) with deep learning environment
-        # Note: Serverless GPU configuration is handled inside the notebook using @distributed decorator
-        # - task_key: train_lstm
+        # Train Simple MLP Model - Uses GPU-optimized databricks_ai_v4 environment
+        # Note: GPU environment configured in notebook metadata
+        # - task_key: train_simple_mlp
         #   notebook_task:
-        #     notebook_path: ../training/notebooks/train_lstm.ipynb
+        #     notebook_path: ../training/notebooks/train_simple_mlp.ipynb
         #     base_parameters:
         #       catalog_name: ${var.catalog_name}
         #       schema_name: ${var.schema_name}
         #       experiment_name: ${var.experiment_models}
-        #       model_name: ${var.model_lstm}
-        #       num_gpus: "8"
-        #       gpu_type: "A10"
+        #       model_name: ${var.model_simple_mlp}
         #   environment_key: dl_env
 
-        # Train Ensemble Model (depends on all base models) - uses visualization environment
+        # Train Ensemble Model (depends on all base models)
         - task_key: train_ensemble
           depends_on:
             - task_key: train_popularity

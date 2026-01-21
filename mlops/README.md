@@ -56,13 +56,25 @@ fashion_recommendations/
 │   ├── model_config.py
 │   └── paths.py
 │
-└── environments/                    # Databricks environment configs
-    ├── base-core.yml
-    ├── base-viz.yml
-    └── base-dl.yml
+└── environments/                    # Environment documentation
+    └── README.md                    # Serverless Runtime 4 package info
 ```
 
-## Environment Strategy
+## Package & Environment Strategy
+
+**Databricks Serverless Runtime 4** includes most packages out-of-the-box:
+- Core ML: `pandas`, `numpy`, `scikit-learn`, `scipy`, `matplotlib`, `seaborn`
+- Deep Learning: `torch`, `torchvision`, `pytorch-lightning`, `transformers`
+- MLflow: Pre-installed on Databricks
+
+**Installation Approach:**
+- Notebooks use `%pip install` for additional packages (e.g., `databricks-feature-engineering`)
+- No custom environment files needed
+- Faster cluster startup times
+
+See `environments/README.md` for details.
+
+## Data & Model Environment Strategy
 
 **Single Catalog, Schema per Environment:**
 - Catalog: `jongseob_demo`

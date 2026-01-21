@@ -63,16 +63,14 @@ make run-ml-pipeline
 ```
 
 ### Notebook Environment Configuration
-Notebooks require environment metadata to load dependencies automatically. This metadata must be updated before deployment to match the target workspace path.
+Notebooks use **Databricks Serverless Runtime 4** which includes most packages (pandas, numpy, scikit-learn, torch, etc.).
 
-The [scripts/update_notebook_environments.py](scripts/update_notebook_environments.py) script updates `.ipynb` notebook metadata with correct workspace paths:
-- **Dev**: `/Workspace/Users/${user.userName}/.bundle/fashion_recs/dev/environments/`
-- **Staging/Prod**: `/Workspace/Shared/.bundle/fashion_recs/{target}/environments/`
+The [scripts/update_notebook_environments.py](scripts/update_notebook_environments.py) script configures notebook metadata:
+- Most notebooks use default Serverless Runtime 4
+- GPU-intensive notebooks (train_simple_mlp) use `databricks_ai_v4`
+- Additional packages installed via `%pip install` in notebooks (e.g., `databricks-feature-engineering`)
 
-Environment mappings (configured in the script):
-- Data engineering + batch inference notebooks → `base-core.yml`
-- Popularity, age_rules, ensemble training → `base-viz.yml`
-- LSTM training → `databricks_ai_v4` (Databricks-provided, no workspace path)
+**No custom environment files needed** - this significantly speeds up cluster startup
 
 ```bash
 # The deployment commands (make deploy-dev/staging/prod) handle this automatically!
@@ -210,14 +208,15 @@ poetry run pytest   # Or run pytest directly
 6. Deploy to production: `make deploy-prod`
 
 ### Notebook Environment Metadata
-All notebooks contain `environmentMetadata` that references environment configurations:
+All notebooks use **Databricks Serverless Runtime 4** by default:
 
-**Custom workspace environments** (most notebooks):
-- Format: `/Workspace/Users/${user.userName}/.bundle/fashion_recs/dev/environments/base-xxx.yml`
-- Files: `base-core.yml` (data engineering, batch inference), `base-viz.yml` (popularity, age_rules, ensemble)
-- Updated automatically by `make deploy-dev/staging/prod` commands
+**Default Serverless Runtime** (most notebooks):
+- No custom environment files required
+- Includes pandas, numpy, scikit-learn, torch, pytorch-lightning, matplotlib, seaborn
+- Additional packages via `%pip install` in notebook cells
+- Faster cluster startup
 
-**Databricks-provided environments**:
+**GPU-optimized environments** (deep learning notebooks):
 - LSTM notebook uses `databricks_ai_v4` - includes PyTorch and deep learning packages pre-installed, optimized for GPU workloads
 - No workspace path needed, references Databricks-managed environment directly
 

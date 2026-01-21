@@ -1,7 +1,7 @@
-.PHONY: help update-requirements update-environments deploy-environments clean \
+.PHONY: help update-requirements update-environments clean \
         update-notebooks-dev update-notebooks-staging update-notebooks-prod \
         deploy-dev deploy-staging deploy-prod test \
-        run-batch-inference set-champion-alias
+        run-batch-inference set-champion-alias run-features run-training run-ml-pipeline
 
 # Default target
 help:
@@ -9,8 +9,7 @@ help:
 	@echo ""
 	@echo "Environment Management:"
 	@echo "  make update-requirements    - Export Poetry dependencies to requirements.txt files"
-	@echo "  make update-environments    - Update Databricks environment YAML files from Poetry"
-	@echo "  make deploy-environments    - Deploy environment files to Databricks workspace"
+	@echo "  make update-environments    - Update Databricks environment YAML files (minimal deps)"
 	@echo ""
 	@echo "Notebook Environment Setup:"
 	@echo "  make update-notebooks-dev   - Update notebook metadata for dev deployment"
@@ -57,27 +56,12 @@ update-requirements:
 	@echo "✓ Requirements files updated"
 
 # Update Databricks environment YAML files
-update-environments: update-requirements
-	@echo "Updating base-core.yml..."
-	@poetry export -f requirements.txt --without-hashes | \
-		awk 'BEGIN {print "  - pip:"} {print "      - " $$0}' > /tmp/deps-core.txt
-	@sed -i.bak '/- pip:/,$$d' environments/base-core.yml
-	@cat /tmp/deps-core.txt >> environments/base-core.yml
-
-	@echo "Updating base-viz.yml..."
-	@poetry export --with viz -f requirements.txt --without-hashes | \
-		awk 'BEGIN {print "  - pip:"} {print "      - " $$0}' > /tmp/deps-viz.txt
-	@sed -i.bak '/- pip:/,$$d' environments/base-viz.yml
-	@cat /tmp/deps-viz.txt >> environments/base-viz.yml
-
-	@echo "Updating base-dl.yml..."
-	@poetry export --with dl,viz -f requirements.txt --without-hashes | \
-		awk 'BEGIN {print "  - pip:"} {print "      - " $$0}' > /tmp/deps-dl.txt
-	@sed -i.bak '/- pip:/,$$d' environments/base-dl.yml
-	@cat /tmp/deps-dl.txt >> environments/base-dl.yml
-
-	@rm -f /tmp/deps-*.txt environments/*.bak
-	@echo "✓ Environment YAML files updated"
+# NOTE: These now contain minimal dependencies (core packages only)
+# Databricks Serverless Runtime 4 includes most packages by default
+update-environments:
+	@echo "✓ Environment files use minimal dependencies (core packages only)"
+	@echo "  Databricks Serverless Runtime 4 includes pandas, numpy, scikit-learn, torch, etc."
+	@echo "  See environments/README.md for full list of pre-installed packages"
 
 # Validate bundle configuration
 validate:
@@ -98,12 +82,6 @@ update-notebooks-prod:
 	@echo "Updating notebook metadata for prod environment..."
 	python3 scripts/update_notebook_environments.py --target prod
 	@echo "✓ Notebooks updated for prod"
-
-# Deploy environments only (faster than full deploy)
-deploy-environments:
-	@echo "Deploying environment files to Databricks..."
-	databricks bundle deploy
-	@echo "✓ Environment files deployed"
 
 # Full deployment workflow: update notebooks + deploy bundle
 deploy-dev: update-notebooks-dev
@@ -182,5 +160,4 @@ clean:
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name "*.pyo" -delete
 	find . -type f -name ".DS_Store" -delete
-	rm -f /tmp/deps-*.txt environments/*.bak
 	@echo "✓ Cleaned temporary files"

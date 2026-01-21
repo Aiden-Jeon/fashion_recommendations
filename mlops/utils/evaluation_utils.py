@@ -64,24 +64,21 @@ def mapk(actual: List[List], predicted: List[List], k: int = 12) -> float:
 
 def calculate_map_at_k(predictions_df, ground_truth_df, k: int = 12) -> float:
     """
-    Calculate MAP@K from Spark DataFrames
+    Calculate MAP@K from pandas DataFrames
 
     Args:
-        predictions_df: Spark DataFrame with columns [customer_id, predicted_articles (array)]
-        ground_truth_df: Spark DataFrame with columns [customer_id, actual_articles (array)]
+        predictions_df: pandas DataFrame with columns [customer_id, predicted_articles (array)]
+        ground_truth_df: pandas DataFrame with columns [customer_id, actual_articles (array)]
         k: cutoff
 
     Returns:
         MAP@K score
     """
     # Join predictions with ground truth
-    merged = predictions_df.join(ground_truth_df, on="customer_id", how="inner")
+    merged = predictions_df.merge(ground_truth_df, on="customer_id", how="inner")
 
-    # Convert to pandas for calculation
-    merged_pd = merged.select("actual_articles", "predicted_articles").toPandas()
-
-    actual = merged_pd["actual_articles"].tolist()
-    predicted = merged_pd["predicted_articles"].tolist()
+    actual = merged["actual_articles"].tolist()
+    predicted = merged["predicted_articles"].tolist()
 
     return mapk(actual, predicted, k)
 
@@ -91,16 +88,14 @@ def log_evaluation_metrics(predictions_df, ground_truth_df, model_name: str, k: 
     Calculate and log comprehensive evaluation metrics to MLflow
 
     Args:
-        predictions_df: Spark DataFrame with predictions
-        ground_truth_df: Spark DataFrame with ground truth
+        predictions_df: pandas DataFrame with predictions
+        ground_truth_df: pandas DataFrame with ground truth
         model_name: Name of the model being evaluated
         k: Cutoff for MAP@K
 
     Returns:
         Dictionary with all calculated metrics
     """
-    from pyspark.sql.functions import explode, countDistinct
-
     # MAP@12 (primary metric)
     map_k = calculate_map_at_k(predictions_df, ground_truth_df, k=k)
     mlflow.log_metric(f"map@{k}", map_k)
@@ -115,12 +110,10 @@ def log_evaluation_metrics(predictions_df, ground_truth_df, model_name: str, k: 
     # Coverage (what % of articles are recommended)
     try:
         # Total unique articles in ground truth
-        total_articles = ground_truth_df.select(explode("actual_articles").alias("article_id")) \
-            .select("article_id").distinct().count()
+        total_articles = ground_truth_df["actual_articles"].explode().nunique()
 
         # Unique articles in predictions
-        recommended_articles = predictions_df.select(explode("predicted_articles").alias("article_id")) \
-            .select("article_id").distinct().count()
+        recommended_articles = predictions_df["predicted_articles"].explode().nunique()
 
         coverage = recommended_articles / total_articles if total_articles > 0 else 0
         mlflow.log_metric("catalog_coverage", coverage)
@@ -129,7 +122,7 @@ def log_evaluation_metrics(predictions_df, ground_truth_df, model_name: str, k: 
         coverage = None
 
     # Number of customers evaluated
-    num_customers = predictions_df.count()
+    num_customers = len(predictions_df)
     mlflow.log_metric("num_customers_evaluated", num_customers)
 
     metrics = {

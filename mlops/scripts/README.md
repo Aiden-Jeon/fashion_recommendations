@@ -69,14 +69,16 @@ The script maps notebooks to their required environment files:
 
 | Notebook | Environment |
 |----------|-------------|
-| `data_engineering/notebooks/*.ipynb` | `base-core.yml` (workspace) |
-| `training/notebooks/train_popularity.ipynb` | `base-viz.yml` (workspace) |
-| `training/notebooks/train_age_rules.ipynb` | `base-viz.yml` (workspace) |
-| `training/notebooks/train_ensemble.ipynb` | `base-viz.yml` (workspace) |
-| `training/notebooks/train_lstm.ipynb` | `databricks_ai_v4` (Databricks-provided) |
-| `deployment/batch_inference/notebooks/*.ipynb` | `base-core.yml` (workspace) |
+| `data_engineering/notebooks/*.ipynb` | Serverless Runtime 4 (default) |
+| `training/notebooks/train_popularity.ipynb` | Serverless Runtime 4 (default) |
+| `training/notebooks/train_age_rules.ipynb` | Serverless Runtime 4 (default) |
+| `training/notebooks/train_ensemble.ipynb` | Serverless Runtime 4 (default) |
+| `training/notebooks/train_simple_mlp.ipynb` | `databricks_ai_v4` (GPU-optimized) |
+| `deployment/batch_inference/notebooks/*.ipynb` | Serverless Runtime 4 (default) |
 
-**Note**: The LSTM notebook uses the Databricks-provided `databricks_ai_v4` environment which includes PyTorch and other deep learning dependencies pre-installed, optimized for GPU workloads.
+**Serverless Runtime 4 includes**: pandas, numpy, scikit-learn, torch, pytorch-lightning, matplotlib, seaborn, mlflow, and more.
+
+**Additional packages** (if needed) are installed via `%pip install` in notebook cells.
 
 ### Options
 
@@ -97,13 +99,16 @@ The script maps notebooks to their required environment files:
 Project root: /path/to/project
 Target environment: dev
 
-Workspace root: /Workspace/Users/${user.userName}/.bundle/fashion_recs/dev
+Configuring notebooks for Databricks Serverless Runtime 4
 
-Updating data_engineering/notebooks/01_load_data.ipynb...
-  ✓ Set base_environment to: /Workspace/Users/${user.userName}/.bundle/fashion_recs/dev/environments/base-core.yml
+Updating data_engineering/notebooks/01_create_features.ipynb...
+  ✓ Using Serverless Runtime 4 (packages installed via %pip in notebook)
+
+Updating training/notebooks/train_simple_mlp.ipynb...
+  ✓ Using Databricks environment: databricks_ai_v4
 ...
 
-✓ All notebooks updated for dev environment!
+✓ All notebooks configured for Serverless Runtime 4!
 
 Next steps:
   1. Commit the changes: git add . && git commit -m 'Update notebook environments for dev'
