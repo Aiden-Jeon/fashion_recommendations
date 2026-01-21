@@ -195,12 +195,12 @@ The Python SDK approach (`scripts/manage_synced_tables.py`) is still available b
 # Create synced tables (legacy)
 python scripts/manage_synced_tables.py create \
   --catalog jongseob_demo \
-  --schema dev_fashion_recommendations
+  --schema fashion_recommendations
 
 # Check status
 python scripts/manage_synced_tables.py status \
   --catalog jongseob_demo \
-  --schema dev_fashion_recommendations
+  --schema fashion_recommendations
 ```
 
 ## Using the CLI Directly (Advanced)

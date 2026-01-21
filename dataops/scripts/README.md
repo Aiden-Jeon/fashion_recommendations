@@ -17,17 +17,17 @@ Databricks Apps require low-latency access to data for interactive dashboards. S
 # Create all app feature synced tables
 python scripts/manage_synced_tables.py create \
   --catalog jongseob_demo \
-  --schema dev_fashion_recommendations
+  --schema fashion_recommendations
 
 # Check status of synced tables
 python scripts/manage_synced_tables.py status \
   --catalog jongseob_demo \
-  --schema dev_fashion_recommendations
+  --schema fashion_recommendations
 
 # Delete all synced tables
 python scripts/manage_synced_tables.py delete \
   --catalog jongseob_demo \
-  --schema dev_fashion_recommendations
+  --schema fashion_recommendations
 ```
 
 ### App Feature Tables
@@ -65,24 +65,24 @@ delete                  Delete synced tables
 ### Example Output
 
 ```
-Creating synced tables for jongseob_demo.dev_fashion_recommendations
+Creating synced tables for jongseob_demo.fashion_recommendations
 Lakebase instance: shared-online-store
 
 ================================================================================
 Creating 4 synced table(s)
 ================================================================================
 
-[1/4] Processing: jongseob_demo.dev_fashion_recommendations.product_sales_summary_synced
+[1/4] Processing: jongseob_demo.fashion_recommendations.product_sales_summary_synced
 --------------------------------------------------------------------------------
-Creating synced table: jongseob_demo.dev_fashion_recommendations.product_sales_summary_synced
-  Source: jongseob_demo.dev_fashion_recommendations.product_sales_summary
+Creating synced table: jongseob_demo.fashion_recommendations.product_sales_summary_synced
+  Source: jongseob_demo.fashion_recommendations.product_sales_summary
   Database instance: shared-online-store
   Primary key: ['article_id']
   Enabling Change Data Feed on source table...
   ✓ Change Data Feed enabled
   No existing table to delete
   Creating synced table...
-✓ Synced table created successfully: jongseob_demo.dev_fashion_recommendations.product_sales_summary_synced
+✓ Synced table created successfully: jongseob_demo.fashion_recommendations.product_sales_summary_synced
 ...
 
 ================================================================================

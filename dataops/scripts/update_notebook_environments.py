@@ -15,7 +15,7 @@ Usage:
 import json
 import argparse
 import subprocess
-import yaml
+import re
 from pathlib import Path
 
 
@@ -49,6 +49,8 @@ def discover_notebooks(project_root: Path, src_dir: str = "src") -> dict:
         
         # Get relative path from project root
         rel_path = notebook_path.relative_to(project_root)
+        
+        # Use default environment file for all notebooks
         notebooks[str(rel_path)] = DEFAULT_ENV_FILE
     
     return notebooks
@@ -82,17 +84,22 @@ def get_bundle_name(project_root: Path = None) -> str:
     
     try:
         with open(databricks_yml, 'r') as f:
-            config = yaml.safe_load(f)
-            bundle_name = config.get('bundle', {}).get('name')
+            content = f.read()
             
-            if not bundle_name:
+            # Simple regex to extract bundle name from YAML
+            # Matches: "name: bundle_name" or "name: 'bundle_name'" or "name: \"bundle_name\""
+            match = re.search(r'^\s*name:\s*["\']?([a-zA-Z0-9_-]+)["\']?', content, re.MULTILINE)
+            
+            if not match:
                 raise ValueError(
                     f"Bundle name not found in {databricks_yml}. "
                     "Please ensure 'bundle.name' is defined in the YAML file."
                 )
             
-            return bundle_name
-    except yaml.YAMLError as e:
+            return match.group(1)
+    except Exception as e:
+        if isinstance(e, (FileNotFoundError, ValueError)):
+            raise
         raise ValueError(f"Error parsing databricks.yml: {e}")
 
 
@@ -120,7 +127,7 @@ def get_current_user() -> str:
         return "${workspace.current_user.userName}"
 
 
-def get_workspace_path(target: str, bundle_name: str = "fashion_recommendations", user_name: str = None) -> str:
+def get_workspace_path(target: str, bundle_name: str, user_name: str = None) -> str:
     """
     Get the workspace root path for the given target environment.
 

@@ -7,12 +7,6 @@ resources:
     data_pipeline_job:
       name: ${bundle.target}-fashion-recs-data-pipeline
 
-      environments:
-        - environment_key: base_core_env
-          spec:
-            dependencies:
-              - ../environments/base-core.yml
-
       tasks:
         # Task 1: Load raw data to bronze tables - uses serverless compute with base-core environment
         - task_key: load_data
@@ -23,7 +17,6 @@ resources:
               schema_name: ${var.schema_name}
               volume_path: ${var.volume_path}
               experiment_name: ${var.experiment_data}
-          environment_key: base_core_env
           timeout_seconds: 3600
 
         # Task 2: Create features (depends on load_data) - uses serverless compute with base-core environment
@@ -35,7 +28,6 @@ resources:
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
-          environment_key: base_core_env
           timeout_seconds: 3600
 
         # Task 3: Create synced tables (depends on create_features) - uses serverless compute with base-core environment
@@ -47,7 +39,6 @@ resources:
             base_parameters:
               catalog_name: ${var.catalog_name}
               schema_name: ${var.schema_name}
-          environment_key: base_core_env
           timeout_seconds: 3600
 
       # Manual trigger for now (no schedule)

@@ -7,13 +7,13 @@ that mirror Delta tables in Lakebase for serving to Databricks Apps.
 
 Usage:
     # Create all app feature synced tables
-    python scripts/manage_synced_tables.py create --catalog jongseob_demo --schema dev_fashion_recommendations
+    python scripts/manage_synced_tables.py create --catalog jongseob_demo --schema fashion_recommendations
     
     # Delete all synced tables
-    python scripts/manage_synced_tables.py delete --catalog jongseob_demo --schema dev_fashion_recommendations
+    python scripts/manage_synced_tables.py delete --catalog jongseob_demo --schema fashion_recommendations
     
     # Check status of synced tables
-    python scripts/manage_synced_tables.py status --catalog jongseob_demo --schema dev_fashion_recommendations
+    python scripts/manage_synced_tables.py status --catalog jongseob_demo --schema fashion_recommendations
 """
 
 import sys
@@ -150,7 +150,7 @@ def main():
     create_parser.add_argument(
         '--schema',
         required=True,
-        help='Schema name (e.g., dev_fashion_recommendations)'
+        help='Schema name (e.g., fashion_recommendations)'
     )
     create_parser.add_argument(
         '--lakebase-instance',
@@ -168,7 +168,7 @@ def main():
     delete_parser.add_argument(
         '--schema',
         required=True,
-        help='Schema name (e.g., dev_fashion_recommendations)'
+        help='Schema name (e.g., fashion_recommendations)'
     )
     
     # Status command
@@ -181,7 +181,7 @@ def main():
     status_parser.add_argument(
         '--schema',
         required=True,
-        help='Schema name (e.g., dev_fashion_recommendations)'
+        help='Schema name (e.g., fashion_recommendations)'
     )
     
     args = parser.parse_args()

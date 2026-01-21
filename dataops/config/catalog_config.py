@@ -2,8 +2,8 @@
 Unity Catalog and Delta table configuration
 
 This configuration supports environment-specific schemas through bundle targets:
-- dev: jongseob_demo.dev_fashion_recommendations
-- prod: jongseob_demo.fashion_recommendations
+- dev: shared.fashion_recommendations
+- prod: shared.fashion_recommendations
 
 Usage:
     Pass catalog_name and schema_name as notebook parameters from bundle
@@ -16,7 +16,7 @@ def get_full_table_name(catalog_name: str, schema_name: str, table_suffix: str) 
     Get fully qualified table name
 
     Args:
-        catalog_name: Catalog name (e.g., "jongseob_demo")
+        catalog_name: Catalog name (e.g., "shared")
         schema_name: Schema name (e.g., "fashion_recommendations")
         table_suffix: Table name suffix (e.g., "articles")
 
@@ -27,7 +27,7 @@ def get_full_table_name(catalog_name: str, schema_name: str, table_suffix: str) 
 
 
 # Lakebase configuration
-LAKEBASE_INSTANCE = "shared-online-store"  # Default Lakebase instance for OLTP access
+LAKEBASE_INSTANCE = "jongseob-demo"  # Default Lakebase instance for OLTP access
 
 
 # Table name suffixes (to be combined with catalog and schema from bundle)
@@ -78,7 +78,7 @@ def get_table_config(catalog_name: str, schema_name: str):
 
 # Legacy support (for local development)
 # Will use dev environment by default
-CATALOG = os.getenv("CATALOG_NAME", "jongseob_demo")
+CATALOG = os.getenv("CATALOG_NAME", "shared")
 SCHEMA = os.getenv("SCHEMA_NAME", "fashion_recommendations")
 FULL_NAME = f"{CATALOG}.{SCHEMA}"
 

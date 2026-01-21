@@ -27,22 +27,22 @@ targets:
     mode: development
     default: true
     workspace:
-      host: https://e2-demo-field-eng.cloud.databricks.com
+      host: https://e2-demo-west.cloud.databricks.com/
     variables:
-      catalog_name: jongseob_demo
+      catalog_name: shared
       schema_name: fashion_recommendations
-      volume_path: /Volumes/jongseob_demo/fashion_recommendations/data
+      volume_path: /Volumes/shared/fashion_recommendations/data
       experiment_data: /Users/${workspace.current_user.userName}/experiments/fashion-recs-dev_data
   prod:
     mode: production
     workspace:
-      host: https://e2-demo-field-eng.cloud.databricks.com
+      host: https://e2-demo-west.cloud.databricks.com/
       # We explicitly deploy to /Workspace/Users/jongseob.jeon@databricks.com to make sure we only have a single copy.
       root_path: /Workspace/Users/jongseob.jeon@databricks.com/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog_name: jongseob_demo
+      catalog_name: shared
       schema_name: fashion_recommendations
-      volume_path: /Volumes/jongseob_demo/fashion_recommendations/data
+      volume_path: /Volumes/shared/fashion_recommendations/data
       experiment_data: /Shared/experiments/fashion-recs-prod_data
     permissions:
       - user_name: jongseob.jeon@databricks.com

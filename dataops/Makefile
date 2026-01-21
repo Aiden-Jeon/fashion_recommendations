@@ -9,7 +9,7 @@ help:
 	@echo ""
 	@echo "Environment Management:"
 	@echo "  make update-requirements    - Export Poetry dependencies to requirements.txt"
-	@echo "  make update-environments    - Update Databricks environment YAML files from Poetry"
+	@echo "  make update-environments    - Update Databricks environment YAML files (minimal deps)"
 	@echo ""
 	@echo "Notebook Environment Setup:"
 	@echo "  make update-notebooks-dev   - Update notebook metadata for dev deployment"
@@ -47,14 +47,12 @@ update-requirements:
 	@echo "✓ Requirements file updated"
 
 # Update Databricks environment YAML files
-update-environments: update-requirements
-	@echo "Updating base-core.yml..."
-	@poetry export -f requirements.txt --without-hashes | \
-		awk 'BEGIN {print "  - pip:"} {print "      - " $$0}' > /tmp/deps-core.txt
-	@sed -i.bak '/- pip:/,$$d' environments/base-core.yml
-	@cat /tmp/deps-core.txt >> environments/base-core.yml
-	@rm -f /tmp/deps-*.txt environments/*.bak
-	@echo "✓ Environment YAML files updated"
+# NOTE: These now contain minimal dependencies (core packages only)
+# Databricks Serverless Runtime 4 includes most packages by default
+update-environments:
+	@echo "✓ Environment files use minimal dependencies (core packages only)"
+	@echo "  Databricks Serverless Runtime 4 includes pandas, numpy, scikit-learn, etc."
+	@echo "  See environments/README.md for full list of pre-installed packages"
 
 # Validate bundle configuration
 validate:
@@ -104,6 +102,5 @@ clean:
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name "*.pyo" -delete
 	find . -type f -name ".DS_Store" -delete
-	rm -f /tmp/deps-*.txt environments/*.bak
 	@echo "✓ Cleaned temporary files"
 
