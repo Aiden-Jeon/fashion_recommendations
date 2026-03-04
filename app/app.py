@@ -6,9 +6,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from urllib.parse import quote
 
-# Load .env file first (for local development)
-from dotenv import load_dotenv
-load_dotenv()
+from contextlib import asynccontextmanager
 
 import pandas as pd
 import plotly.express as px
@@ -66,11 +64,27 @@ def get_department_options() -> list[str]:
     df = query_sql(query)
     return ["ALL"] + df["department_name"].tolist()
 
-app = FastAPI(title="Fashion Recommendations Dashboard")
+_workspace: Optional[WorkspaceClient] = None
+
+
+def _get_workspace() -> WorkspaceClient:
+    global _workspace
+    if _workspace is None:
+        _workspace = WorkspaceClient()
+    return _workspace
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    logging.getLogger("fashion_app").info("Shutting down application...")
+    close_all_connections()
+
+
+app = FastAPI(title="Fashion Recommendations Dashboard", lifespan=lifespan)
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-workspace = WorkspaceClient()
 logger = logging.getLogger("fashion_app")
 if not logging.getLogger().handlers:
     logging.basicConfig(level=logging.INFO)
@@ -96,13 +110,6 @@ async def inject_user_token(request: Request, call_next):
     #     return Response(status_code=401, content="Missing user token")
     response = await call_next(request)
     return response
-
-
-@app.on_event("shutdown")
-def shutdown_event():
-    """Clean up resources on app shutdown."""
-    logger.info("Shutting down application...")
-    close_all_connections()
 
 
 def build_main_nav(active_slug: str) -> List[Dict[str, object]]:
@@ -707,7 +714,7 @@ def get_image(article_id: int = Query(...)):
     """Serve product image from volume."""
     try:
         image_path = get_image_path(article_id)
-        response = workspace.files.download(image_path)
+        response = _get_workspace().files.download(image_path)
         data = response.contents.read()
         return Response(content=data, media_type="image/jpeg")
     except Exception as e:
@@ -736,7 +743,7 @@ def personalization(
             model_alias,
             prediction_timestamp,
             batch_id
-        FROM jongseob_demo.dev_fashion_recommendations.predictions_synced
+        FROM shared.fashion_recommendations.predictions_synced_v2
         WHERE customer_id = ?
         ORDER BY prediction_timestamp DESC
         """

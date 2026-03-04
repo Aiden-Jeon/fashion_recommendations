@@ -270,7 +270,7 @@ Production-ready ML pipeline for training and deploying recommendation models.
 
 **Environment Strategy:**
 - Single catalog (`jongseob_demo`) with environment-specific schemas
-- Dev: `dev_fashion_recommendations`
+- Dev: `fashion_recommendations`
 - Staging: `staging_fashion_recommendations`
 - Prod: `prod_fashion_recommendations`
 
@@ -453,7 +453,7 @@ export DATABRICKS_TOKEN=your-token
 
 # Unity Catalog
 export CATALOG_NAME=jongseob_demo
-export SCHEMA_NAME=dev_fashion_recommendations
+export SCHEMA_NAME=fashion_recommendations
 ```
 
 ### Monitoring

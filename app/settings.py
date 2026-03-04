@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("APP_ENV", "app_env"),
     )
     catalog_name: str = Field(
-        default="jongseob_demo",
+        default="shared",
         validation_alias=AliasChoices("CATALOG_NAME", "catalog_name"),
     )
     schema_name: str = Field(
@@ -31,8 +31,12 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SCHEMA_NAME", "schema_name"),
     )
     volume_path: str = Field(
-        default="/Volumes/jongseob_demo/fashion_recommendations/data",
+        default="/Volumes/shared/fashion_recommendations/data",
         validation_alias=AliasChoices("VOLUME_PATH", "volume_path"),
+    )
+    warehouse_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("DATABRICKS_WAREHOUSE_ID", "warehouse_id"),
     )
 
     @property

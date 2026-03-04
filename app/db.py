@@ -8,10 +8,6 @@ import time
 from functools import wraps
 from typing import Any, Callable, Optional
 
-# Load .env file first (for local development)
-from dotenv import load_dotenv
-load_dotenv()
-
 import pandas as pd
 from databricks import sql
 from databricks.sdk import WorkspaceClient
@@ -58,7 +54,6 @@ def clear_cache() -> None:
         _cache.clear()
     logger.info("Query cache cleared")
 
-settings = get_settings()
 _workspace_client: Optional[WorkspaceClient] = None
 
 # Per-token connection pools so users don't share connections
@@ -137,7 +132,8 @@ def _get_connection_config() -> tuple[str, str, str]:
     w = _get_workspace_client()
 
     # Prefer the resource-injected env var from the app config
-    warehouse_id = os.getenv("DATABRICKS_WAREHOUSE_ID")
+    settings = get_settings()
+    warehouse_id = settings.warehouse_id
     if not warehouse_id:
         warehouses = list(w.warehouses.list())
         if not warehouses:

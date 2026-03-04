@@ -4,7 +4,7 @@ bundle:
 resources:
   apps:
     dashboard_app:
-      name: "fashion-rec-app-${bundle.target}"
+      name: "fashion-recommendations-demo"
       source_code_path: .
       description: "Fashion Recommendations Dashboard"
       user_api_scopes:
@@ -13,15 +13,20 @@ resources:
         - catalog.catalogs:read
         - catalog.schemas:read
         - catalog.tables:read
+      resources:
+        - name: "fashion-warehouse"
+          sql_warehouse:
+            id: "75fd8278393d07eb"
+            permission: "CAN_USE"
 
 targets:
   dev:
     mode: development
     default: true
     workspace:
-      host: "https://e2-demo-field-eng.cloud.databricks.com/"
+      host: "https://e2-demo-west.cloud.databricks.com/"
 
   prod:
     mode: production
     workspace:
-      host: "https://e2-demo-field-eng.cloud.databricks.com/"
+      host: "https://e2-demo-west.cloud.databricks.com/"
